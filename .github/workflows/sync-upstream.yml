@@ -1,0 +1,58 @@
+# Takes in what the original developer publishes (Leviidev/Henge, main) and builds it.
+#
+# Runs every Monday, and by hand (Actions tab > Sync with Henge > Run workflow). It merges upstream's main into
+# this branch and, when that brought anything new, builds the IPA. If upstream changed the same lines as Simplex
+# Mac (German texts, the reset feature), the merge stops with a conflict and nothing is pushed: the app stays
+# as it was until the conflict is resolved by hand. Upstream changes to workflow files can't be pushed with the
+# Actions token either; those need a manual merge too.
+
+name: Sync with Henge
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.merge.outputs.changed }}
+      sha: ${{ steps.merge.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge Leviidev/Henge main
+        id: merge
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch https://github.com/Leviidev/Henge.git main
+          before=$(git rev-parse HEAD)
+          if ! git merge --no-edit FETCH_HEAD; then
+            echo "::error::Upstream changes conflict with Simplex Mac's changes in:"
+            git diff --name-only --diff-filter=U | sed 's/^/::error::  /'
+            git merge --abort
+            exit 1
+          fi
+          if [ "$(git rev-parse HEAD)" = "$before" ]; then
+            echo "Nothing new upstream."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    uses: ./.github/workflows/build-henge.yml
+    with:
+      ref: ${{ needs.sync.outputs.sha }}

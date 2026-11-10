@@ -21,9 +21,17 @@ on:
       - "Screenshots/**"
       - "repo.json"
   workflow_dispatch: {}
+  # sync-upstream.yml builds what it merged (its push doesn't start this workflow by itself).
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to build
+        type: string
+        required: false
+        default: ""
 
 concurrency:
-  group: build-henge-${{ github.ref }}
+  group: build-henge-${{ github.ref }}-${{ inputs.ref }}
   cancel-in-progress: true
 
 env:
@@ -46,6 +54,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: Henge
+          ref: ${{ inputs.ref }}
 
       # fetch_deps.sh copies prebuilt pieces out of a BUILT Husk checkout:
       # StikJIT.xcframework (vendored in Husk's repo, comes with checkout),

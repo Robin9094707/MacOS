@@ -21,6 +21,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Leviidev/Henge?style=flat-square&color=2E6BFF&labelColor=111111" alt="GPL-2.0-or-later"></a>
 </p>
 
+> **Simplex Mac** ist eine deutsche Version von Henge mit derselben Bundle-ID (`com.henge.app`): Sie installiert sich als Update über Henge, und Henge-Updates installieren sich darüber, ohne dass Macs oder Einstellungen verloren gehen. Dazu kommen: komplett deutsche Oberfläche, Maus und Tastatur per USB/Bluetooth auch am iPhone (über AssistiveTouch), Tastatur-Umbelegung für PC-Tastaturen, Zurücksetzen eines Macs auf den Werkszustand ohne Neuinstallation (Mac-Einstellungen › Zurücksetzen) und ein erweiterter „macOS beschleunigen“-Befehl. Die Action „Sync with Henge“ übernimmt jeden Montag die Änderungen des Originals und baut neu.
+
 Download macOS, install it on the device, and use it.
 
 - **Own emulator** — iOS gives apps no hypervisor, so Henge runs the Mac's arm64 code through its own JIT, with its own MMU and devices. It doesn't use QEMU or Virtualization.framework.
