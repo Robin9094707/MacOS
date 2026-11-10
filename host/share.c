@@ -610,14 +610,24 @@ static const char install_script[] =
    Nothing reads the script's own stdin (sh is reading the script from it). */
 static const char lighten_script[] =
     "#!/bin/sh\n"
-    "echo 'Making macOS lighter for Henge...'\n"
+    "echo 'macOS wird für Simplex Mac beschleunigt ...'\n"
     "defaults write com.apple.universalaccess reduceMotion -bool true 2>/dev/null </dev/null || "
-    "echo '  Reduce Motion: turn it on in System Settings, Accessibility, Motion.'\n"
+    "echo '  Bewegung reduzieren: in Systemeinstellungen > Bedienungshilfen > Bewegung einschalten.'\n"
     "defaults write com.apple.universalaccess reduceTransparency -bool true 2>/dev/null </dev/null || "
-    "echo '  Reduce Transparency: turn it on in System Settings, Accessibility, Display.'\n"
+    "echo '  Transparenz reduzieren: in Systemeinstellungen > Bedienungshilfen > Anzeige einschalten.'\n"
     "defaults write -g NSAutomaticWindowAnimationsEnabled -bool false </dev/null\n"
     "defaults write -g NSWindowResizeTime -float 0.001 </dev/null\n"
     "defaults write com.apple.dock launchanim -bool false </dev/null\n"
+    /* More animation the emulated GPU and CPUs would otherwise draw frame by frame. */
+    "defaults write com.apple.dock expose-animation-duration -float 0.1 </dev/null\n"
+    "defaults write com.apple.dock mineffect -string scale </dev/null\n"
+    "defaults write com.apple.dock show-recents -bool false </dev/null\n"
+    "defaults write com.apple.finder DisableAllAnimations -bool true </dev/null\n"
+    "defaults write -g NSScrollAnimationEnabled -bool false </dev/null\n"
+    "defaults write -g QLPanelAnimationDuration -float 0 </dev/null\n"
+    "defaults write -g NSToolbarFullScreenAnimationDuration -float 0 </dev/null\n"
+    "defaults write -g NSBrowserColumnAnimationSpeedMultiplier -float 0 </dev/null\n"
+    "defaults write -g NSDocumentRevisionsWindowTransformAnimation -bool false </dev/null\n"
     "defaults -currentHost write com.apple.screensaver idleTime -int 0 </dev/null\n"
     "defaults write com.apple.WindowManager StandardHideWidgets -int 1 </dev/null\n"
     "defaults write com.apple.WindowManager StageManagerHideWidgets -int 1 </dev/null\n"
@@ -633,10 +643,19 @@ static const char lighten_script[] =
     "}\n"
     "JS\n"
     "fi\n"
-    "killall Dock 2>/dev/null\n"
-    "echo 'Done: window and Dock animations, desktop widgets, the screen saver and a moving wallpaper are off.'\n"
-    "echo 'Also turn on Reduce Motion and Reduce Transparency: System Settings, Accessibility.'\n"
-    "echo 'Log out and back in for all of it to take effect. To undo: curl -s http://" HV_SHARE_ADDR "/.henge/unlighten | sh'\n";
+    "killall Dock Finder 2>/dev/null\n"
+    "echo 'Fertig: Fenster- und Dock-Animationen, Widgets, Bildschirmschoner und bewegtes Hintergrundbild sind aus.'\n"
+    /* Last, so skipping the password (Ctrl-C) leaves everything above done. Spotlight's indexer, software update
+       checks, Time Machine and sleep are the biggest background loads on an emulated Mac after it is set up. */
+    "echo ''\n"
+    "echo 'Spotlight-Indizierung, automatische Updates und Time Machine abschalten: Passwort des Macs eingeben'\n"
+    "echo '(oder Ctrl-C zum Überspringen).'\n"
+    "sudo sh -c 'mdutil -a -i off >/dev/null 2>&1; "
+    "defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled -bool false; "
+    "defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload -bool false; "
+    "tmutil disable >/dev/null 2>&1; pmset -a sleep 0 powernap 0 >/dev/null 2>&1; true' </dev/null "
+    "&& echo 'Spotlight-Indizierung, automatische Updates und Time Machine sind aus.'\n"
+    "echo 'Bitte ab- und wieder anmelden, damit alles wirkt. Rückgängig: curl -s http://" HV_SHARE_ADDR "/.henge/unlighten | sh'\n";
 
 /* And back. The wallpaper stays as it is: pick one in System Settings. */
 static const char unlighten_script[] =
@@ -646,12 +665,26 @@ static const char unlighten_script[] =
     "defaults delete -g NSAutomaticWindowAnimationsEnabled 2>/dev/null </dev/null\n"
     "defaults delete -g NSWindowResizeTime 2>/dev/null </dev/null\n"
     "defaults delete com.apple.dock launchanim 2>/dev/null </dev/null\n"
+    "defaults delete com.apple.dock expose-animation-duration 2>/dev/null </dev/null\n"
+    "defaults delete com.apple.dock mineffect 2>/dev/null </dev/null\n"
+    "defaults delete com.apple.dock show-recents 2>/dev/null </dev/null\n"
+    "defaults delete com.apple.finder DisableAllAnimations 2>/dev/null </dev/null\n"
+    "defaults delete -g NSScrollAnimationEnabled 2>/dev/null </dev/null\n"
+    "defaults delete -g QLPanelAnimationDuration 2>/dev/null </dev/null\n"
+    "defaults delete -g NSToolbarFullScreenAnimationDuration 2>/dev/null </dev/null\n"
+    "defaults delete -g NSBrowserColumnAnimationSpeedMultiplier 2>/dev/null </dev/null\n"
+    "defaults delete -g NSDocumentRevisionsWindowTransformAnimation 2>/dev/null </dev/null\n"
     "defaults -currentHost delete com.apple.screensaver idleTime 2>/dev/null </dev/null\n"
     "defaults write com.apple.WindowManager StandardHideWidgets -int 0 </dev/null\n"
     "defaults write com.apple.WindowManager StageManagerHideWidgets -int 0 </dev/null\n"
-    "killall Dock 2>/dev/null\n"
-    "echo 'Back as it was, apart from the wallpaper (System Settings, Wallpaper).'\n"
-    "echo 'Log out and back in (or restart) for all of it to take effect.'\n";
+    "killall Dock Finder 2>/dev/null\n"
+    "echo 'Spotlight, automatische Updates und Time Machine wieder einschalten: Passwort des Macs eingeben (oder Ctrl-C).'\n"
+    "sudo sh -c 'mdutil -a -i on >/dev/null 2>&1; "
+    "defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled -bool true; "
+    "defaults delete /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload 2>/dev/null; "
+    "tmutil enable >/dev/null 2>&1; pmset -a restoredefaults >/dev/null 2>&1; true' </dev/null\n"
+    "echo 'Alles wie vorher, außer dem Hintergrundbild (Systemeinstellungen > Hintergrundbild).'\n"
+    "echo 'Bitte ab- und wieder anmelden (oder neu starten), damit alles wirkt.'\n";
 
 static int serve_agent(Conn *c, Request *r) {
     if (body_discard(c, r) != 0) return -1;
