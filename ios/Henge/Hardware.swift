@@ -199,6 +199,7 @@ final class HardwareMouse {
     private var scrollScale: Float = 0.3
     private var sideButtons = true
     private var lastActivity: CFTimeInterval = 0
+    private var movesLogged = 0
 
     /// iPhone has no pointer of its own: a mouse there goes through AssistiveTouch, whose clicks and drags
     /// also arrive as touches at its cursor. While a mouse is in use those touches are the mouse's, not
@@ -227,12 +228,15 @@ final class HardwareMouse {
         HengeLog.log("input", "physical mouse: swap right/middle \(swapButtons ? "on" : "off")")
         lastScrollFirst = 0
         lastScrollSecond = 0
+        movesLogged = 0
+        HengeLog.log("input", "mice at start: \(GCMouse.mice().count), keyboard: \(GCKeyboard.coalesced != nil ? "yes" : "no")")
         GCMouse.mice().forEach(attach)
         observers.append(NotificationCenter.default.addObserver(forName: .GCMouseDidConnect, object: nil, queue: .main) { [weak self] note in
             if let mouse = note.object as? GCMouse { self?.attach(mouse) }
         })
         observers.append(NotificationCenter.default.addObserver(forName: .GCMouseDidDisconnect, object: nil, queue: .main) { [weak self] note in
             guard let self, let mouse = note.object as? GCMouse else { return }
+            HengeLog.log("input", "mouse disconnected: \(mouse.vendorName ?? "?")")
             self.releaseButtons()
             self.mice.removeAll { $0 === mouse }
         })
@@ -305,6 +309,10 @@ final class HardwareMouse {
     /// GameController's Y runs upward. What doesn't make a whole step yet waits for the next move.
     private func moved(_ dx: Float, _ dy: Float) {
         lastActivity = CACurrentMediaTime()
+        if movesLogged < 8 {
+            movesLogged += 1
+            HengeLog.log("input", "physical mouse move: \(dx), \(dy)")
+        }
         restX += dx * speed
         restY -= dy * speed
         let x = restX.rounded(), y = restY.rounded()

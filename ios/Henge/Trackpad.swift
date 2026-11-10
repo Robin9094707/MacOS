@@ -107,6 +107,10 @@ struct Trackpad: UIViewRepresentable {
         override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
             var touches = touches.filter { $0.type != .indirectPointer }
             if HardwareMouse.shared.ownsTouches {
+                if touchesLogged < 12 {
+                    touchesLogged += 1
+                    HengeLog.log("input", "trackpad: \(touches.count) touch(es) left to the mouse (AssistiveTouch)")
+                }
                 mouseTouches.formUnion(touches)
                 touches.removeAll()
             }
