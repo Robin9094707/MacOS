@@ -22,15 +22,15 @@ struct SettingsView: View {
     /// The second footer paragraph: how you click, given the selected input mode.
     private var inputDescription: String {
         if inputMode == .touchscreen {
-            return "Tap to click once. Tap then hold to begin dragging. Quickly tap with two fingers to right-click."
+            return "Einmal tippen zum Klicken. Tippen und halten, um zu ziehen. Schnell mit zwei Fingern tippen für einen Rechtsklick."
         }
         switch volumeMode {
         case .delayHold:
-            return "Delay hold waits to see if you're holding or just clicking the volume button, which results in all clicks being ~0.5s long."
+            return "„Verzögert halten“ wartet ab, ob du die Lautstärketaste hältst oder nur klickst. Dadurch dauert jeder Klick etwa 0,5 s."
         case .tapThenDrag:
-            return "Tap then drag waits to see if you're holding or just clicking the volume button, but it unconditionally sends a single click regardless of whether you tap or hold, which results in shorter clicks at the cost of sending a click before holding."
+            return "„Tippen, dann ziehen“ wartet ebenfalls ab, ob du hältst oder klickst, sendet aber immer sofort einen Klick. Das macht Klicks kürzer, schickt aber vor dem Halten einen Klick."
         case .intercept:
-            return "Activates the camera in order to intercept volume keys properly. This causes the volume keys to behave in the same way a mouse's buttons do, but it causes higher temperatures, as the camera is always on."
+            return "Aktiviert die Kamera, um die Lautstärketasten sauber abzufangen. Dann verhalten sie sich genau wie Maustasten, das Gerät wird aber wärmer, weil die Kamera immer läuft."
         }
     }
 
@@ -38,109 +38,109 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("JIT") {
-                    LabeledContent("Status", value: JITBootstrap.ready ? "On" : "Off")
-                    Picker("Method", selection: $jit.method) {
+                    LabeledContent("Status", value: JITBootstrap.ready ? "An" : "Aus")
+                    Picker("Methode", selection: $jit.method) {
                         ForEach(JITMethod.allCases) { Text($0.title).tag($0) }
                     }
-                    Text(jit.method == .automatic ? jit.automaticDescription : "Henge uses \(jit.method.title).")
+                    Text(jit.method == .automatic ? jit.automaticDescription : "Simplex Mac nutzt \(jit.method.title).")
                         .font(.footnote).foregroundStyle(.secondary)
-                    Button("Set up JIT") { jit.showSetup = true }
-                    Toggle("Turn on JIT when Henge opens", isOn: $jitAtLaunch)
+                    Button("JIT einrichten") { jit.showSetup = true }
+                    Toggle("JIT beim Öffnen einschalten", isOn: $jitAtLaunch)
                     if jitAtLaunch {
-                        Text("Henge connects LocalDevVPN first when it is off, and comes back.")
+                        Text("Simplex Mac verbindet zuerst LocalDevVPN, falls es aus ist, und kehrt dann zurück.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
-                    LabeledContent("Code region", value: "\(JITBootstrap.jitBytes >> 20) MB, claimed once per launch")
+                    LabeledContent("Codebereich", value: "\(JITBootstrap.jitBytes >> 20) MB, einmal pro Start belegt")
                 }
                 .listRowBackground(Desk.card)
-                Section("Memory") {
-                    LabeledContent("Extra memory", value: Entitlements.increasedMemory ? "On" : "Off")
-                    LabeledContent("Henge's limit", value: ByteText.string(UInt64(Entitlements.memoryLimitAtLaunch)))
-                    LabeledContent("Free for Henge", value: ByteText.string(UInt64(henge_available_memory())))
+                Section("Arbeitsspeicher") {
+                    LabeledContent("Zusätzlicher Speicher", value: Entitlements.increasedMemory ? "An" : "Aus")
+                    LabeledContent("Limit der App", value: ByteText.string(UInt64(Entitlements.memoryLimitAtLaunch)))
+                    LabeledContent("Frei für die App", value: ByteText.string(UInt64(henge_available_memory())))
                     Text(Entitlements.increasedMemory
-                         ? "A Mac's memory is kept out of this limit once JIT is on. If iOS refuses that, it uses free storage instead."
-                         : "This install isn't signed with the increased memory limit entitlement. Reinstall Henge with a certificate that has it. Export your Mac first if the reinstall replaces the app's data.")
+                         ? "Sobald JIT an ist, zählt der Arbeitsspeicher eines Macs nicht zu diesem Limit. Lehnt iOS das ab, wird stattdessen freier Speicherplatz genutzt."
+                         : "Diese Installation ist nicht mit der Berechtigung für ein erhöhtes Speicherlimit signiert. Installiere Simplex Mac mit einem Zertifikat neu, das sie hat. Exportiere vorher deinen Mac, falls die Neuinstallation die App-Daten ersetzt.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 .listRowBackground(Desk.card)
                 Group {
-                    Section(Device.isPad ? "Mouse and Trackpad" : "Mouse") {
+                    Section(Device.isPad ? "Maus und Trackpad" : "Maus") {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Pointer speed")
+                            Text("Zeigergeschwindigkeit")
                             Slider(value: $mouseSpeed, in: 0.5...3)
                         }
-                        Toggle("Reverse scrolling", isOn: $reverseScrolling)
+                        Toggle("Scrollrichtung umkehren", isOn: $reverseScrolling)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Scroll speed")
+                            Text("Scrollgeschwindigkeit")
                             Slider(value: $scrollSpeed, in: 0.1...1.5)
                         }
-                        Toggle("Swap physical right and middle buttons", isOn: $swapMouseButtons)
-                        Text("Only enable this if your physical mouse's right and middle buttons are reversed in the Mac. Touch controls stay unchanged. Restart the Mac session to apply.")
+                        Toggle("Rechte und mittlere Maustaste tauschen", isOn: $swapMouseButtons)
+                        Text("Nur einschalten, wenn rechte und mittlere Taste deiner Maus im Mac vertauscht sind. Die Touch-Steuerung bleibt gleich. Gilt nach einem Neustart des Macs.")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Toggle("Side buttons go back and forward", isOn: $sideButtonsNavigate)
+                        Toggle("Seitentasten für Zurück und Vor", isOn: $sideButtonsNavigate)
                         Text(Device.isPad
-                             ? "A Magic Keyboard, or a USB or Bluetooth mouse, moves the Mac's pointer. Pointer speed changes apply the next time a Mac starts; scroll speed changes apply immediately."
-                             : "iPhone uses a mouse through AssistiveTouch: turn it on in Settings › Accessibility › Touch › AssistiveTouch, and pair a Bluetooth mouse under Devices there (a USB mouse just plugs in). Henge takes the mouse's own movement, buttons and wheel, and ignores the touches AssistiveTouch makes for its clicks, so each click lands once. To hide iPhone's round cursor over the Mac, set Pointer Style › Auto-Hide to a short time. Pointer speed changes apply the next time a Mac starts; scroll speed changes apply immediately.")
+                             ? "Ein Magic Keyboard oder eine USB- oder Bluetooth-Maus bewegt den Zeiger des Macs. Die Zeigergeschwindigkeit gilt beim nächsten Mac-Start, die Scrollgeschwindigkeit sofort."
+                             : "Das iPhone nutzt eine Maus über AssistiveTouch: Schalte es unter Einstellungen › Bedienungshilfen › Tippen › AssistiveTouch ein und kopple eine Bluetooth-Maus dort unter „Geräte“ (eine USB-Maus einfach anstecken). Simplex Mac nimmt Bewegung, Tasten und Mausrad direkt von der Maus und ignoriert die Berührungen, die AssistiveTouch für Klicks erzeugt – so kommt jeder Klick genau einmal an. Um den runden iPhone-Zeiger über dem Mac auszublenden, stelle unter „Zeigerstil“ das automatische Ausblenden auf eine kurze Zeit. Die Zeigergeschwindigkeit gilt beim nächsten Mac-Start, die Scrollgeschwindigkeit sofort.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     .listRowBackground(Desk.card)
                 }
-                Section("Keyboard") {
-                    Toggle("Swap Command and Option", isOn: $swapCommandOption)
-                    Toggle("Caps Lock is Control", isOn: $capsLockAsControl)
-                    Text("A USB or Bluetooth keyboard types straight into the Mac, every key and modifier. On a PC keyboard, swap Command and Option so the key beside the space bar is Command, as on a Mac. Changes apply the next time a Mac starts. \(Device.name) keeps a few shortcuts for itself, such as ⌘-Tab, ⌘-Space and ⌘-H.")
+                Section("Tastatur") {
+                    Toggle("Command und Option tauschen", isOn: $swapCommandOption)
+                    Toggle("Feststelltaste als Control", isOn: $capsLockAsControl)
+                    Text("Eine USB- oder Bluetooth-Tastatur tippt direkt in den Mac, mit allen Tasten und Sondertasten. Bei einer PC-Tastatur Command und Option tauschen, damit die Taste neben der Leertaste wie beim Mac ⌘ ist. Änderungen gelten beim nächsten Mac-Start. Das \(Device.name) behält ein paar Kurzbefehle für sich, etwa ⌘-Tab, ⌘-Leertaste und ⌘-H.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 .listRowBackground(Desk.card)
                 if !Device.isPad {
                     Section("Trackpad") {
-                        Picker("Input mode", selection: $inputMode) {
+                        Picker("Eingabemodus", selection: $inputMode) {
                             Text("Touchscreen").tag(VolumeClicks.InputMode.touchscreen)
-                            Text("Volume buttons").tag(VolumeClicks.InputMode.volumeButtons)
+                            Text("Lautstärketasten").tag(VolumeClicks.InputMode.volumeButtons)
                         }
                         .pickerStyle(.menu)
                         if inputMode == .volumeButtons {
-                            Picker("Button mode", selection: $volumeMode) {
-                                Text("Delay hold").tag(VolumeClicks.Mode.delayHold)
-                                Text("Tap then drag").tag(VolumeClicks.Mode.tapThenDrag)
-                                Text("Camera intercept").tag(VolumeClicks.Mode.intercept)
+                            Picker("Tastenmodus", selection: $volumeMode) {
+                                Text("Verzögert halten").tag(VolumeClicks.Mode.delayHold)
+                                Text("Tippen, dann ziehen").tag(VolumeClicks.Mode.tapThenDrag)
+                                Text("Über Kamera abfangen").tag(VolumeClicks.Mode.intercept)
                             }
                             .pickerStyle(.menu)
-                            Toggle("Swap buttons", isOn: $swapButtons)
+                            Toggle("Tasten tauschen", isOn: $swapButtons)
                         }
-                        Text("Henge is able to emulate a Magic Trackpad, allowing you to perform native macOS gestures using your device's touchscreen.\n\n\(inputDescription)")
+                        Text("Simplex Mac emuliert ein Magic Trackpad, sodass du echte macOS-Gesten auf dem Touchscreen deines Geräts machen kannst.\n\n\(inputDescription)")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     .listRowBackground(Desk.card)
                 }
-                Section("Performance") {
-                    Picker("Mac refresh rate", selection: $refreshRate) {
+                Section("Leistung") {
+                    Picker("Bildwiederholrate des Macs", selection: $refreshRate) {
                         Text("30 Hz").tag(30)
                         Text("60 Hz").tag(60)
                         Text("120 Hz").tag(120)
                     }
                     .pickerStyle(.segmented)
-                    Toggle("Faster disk writes", isOn: $fastFlush)
-                    Toggle("Quicker wake from idle", isOn: $wfiSpin)
-                    Toggle("Superblocks (experimental)", isOn: $superblocks)
-                    Picker("Code cache", selection: $codeCacheMB) {
+                    Toggle("Schnellere Schreibzugriffe", isOn: $fastFlush)
+                    Toggle("Schneller aus dem Leerlauf aufwachen", isOn: $wfiSpin)
+                    Toggle("Superblöcke (experimentell)", isOn: $superblocks)
+                    Picker("Code-Cache", selection: $codeCacheMB) {
                         Text("1 GB").tag(1024)
                         Text("1.5 GB").tag(1536)
                     }
-                    Text("A bigger code cache empties less often and takes more memory; Henge picks 1.5 GB where there is room for it. Applies the next time Henge opens. If JIT stops turning on, choose 1 GB.")
+                    Text("Ein größerer Code-Cache wird seltener geleert und braucht mehr Speicher; Simplex Mac wählt 1,5 GB, wo Platz ist. Gilt beim nächsten Öffnen der App. Wenn JIT nicht mehr angeht, wähle 1 GB.")
                         .font(.footnote).foregroundStyle(.secondary)
-                    Text("macOS draws a frame for every refresh: 30 Hz leaves the most of the emulated CPU to apps, at the cost of choppier animation; 60 Hz is smoother. Faster disk writes order them without waiting for a full sync; a sudden power loss could lose the last ones. Quicker wake keeps an idle CPU watching for work for 50 µs, at some battery cost. Superblocks let translated code run past conditional branches. Changes apply the next time a Mac starts.")
+                    Text("macOS zeichnet bei jeder Bildwiederholung ein Bild: 30 Hz lässt Apps am meisten emulierte CPU-Leistung, Animationen ruckeln dafür mehr; 60 Hz ist flüssiger. Schnellere Schreibzugriffe ordnen sie, ohne auf eine volle Synchronisierung zu warten; bei plötzlichem Stromverlust könnten die letzten verloren gehen. Schnelleres Aufwachen lässt eine untätige CPU 50 µs nach Arbeit Ausschau halten, kostet etwas Akku. Superblöcke lassen übersetzten Code über bedingte Sprünge hinweg laufen. Änderungen gelten beim nächsten Mac-Start.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 .listRowBackground(Desk.card)
-                Section("Log") {
-                    ShareLink(item: HengeLog.logFileURL) { Label("Share henge.log", systemImage: "square.and.arrow.up") }
+                Section("Protokoll") {
+                    ShareLink(item: HengeLog.logFileURL) { Label("henge.log teilen", systemImage: "square.and.arrow.up") }
                 }
                 .listRowBackground(Desk.card)
             }
             .scrollContentBackground(.hidden)
             .background(Desk.page)
-            .navigationTitle("Settings")
+            .navigationTitle("Einstellungen")
         }
     }
 }

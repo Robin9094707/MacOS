@@ -19,19 +19,19 @@ struct MacOSRelease: Identifiable, Hashable {
            but its GPU driver (protocol 0x1f) never starts WindowServer's GPU work under Henge yet: not offered until it does. */
         MacOSRelease(id: "22G120", name: "macOS Ventura 13.6",
                      url: URL(string: "https://updates.cdn-apple.com/2023FallFCS/fullrestores/042-55833/C0830847-A2F8-458F-B680-967991820931/UniversalMac_13.6_22G120_Restore.ipsw")!,
-                     bytes: 12_297 << 20, note: "The smallest download (and about 35 GB in all), for devices short on storage.", macBytes: 23 << 30),
+                     bytes: 12_297 << 20, note: "Der kleinste Download (insgesamt etwa 35 GB), für Geräte mit wenig Speicher.", macBytes: 23 << 30),
         MacOSRelease(id: "23G93", name: "macOS Sonoma 14.6.1",
                      url: URL(string: "https://updates.cdn-apple.com/2024SummerFCS/fullrestores/062-52859/932E0A8F-6644-4759-82DA-F8FA8DEA806A/UniversalMac_14.6.1_23G93_Restore.ipsw")!,
-                     bytes: 14_106 << 20, note: "A smaller download than Sequoia. If its login screen is green, choose the wallpaper again in System Settings.", macBytes: 26 << 30),
+                     bytes: 14_106 << 20, note: "Kleiner als Sequoia. Ist der Anmeldebildschirm grün, wähle das Hintergrundbild in den Systemeinstellungen erneut.", macBytes: 26 << 30),
         MacOSRelease(id: "24G90", name: "macOS Sequoia 15.6.1",
                      url: URL(string: "https://updates.cdn-apple.com/2025SummerFCS/fullrestores/093-10809/CFD6DD38-DAF0-40DA-854F-31AAD1294C6F/UniversalMac_15.6.1_24G90_Restore.ipsw")!,
-                     bytes: 16_035 << 20, note: "Recommended: the version Henge is tested with."),
+                     bytes: 16_035 << 20, note: "Empfohlen: die am besten getestete Version."),
         MacOSRelease(id: "25G83", name: "macOS Tahoe 26.6.2",
                      url: URL(string: "https://updates.cdn-apple.com/2026SummerFCS/fullrestores/140-75212/A2A24B94-1FC1-45A3-93F7-C51B02AF1F4D/UniversalMac_26.6.2_25G83_Restore.ipsw")!,
-                     bytes: 18_856 << 20, note: "Not tested with Henge yet."),
+                     bytes: 18_856 << 20, note: "Noch nicht getestet."),
         MacOSRelease(id: "26B123", name: "macOS 27.2",
                      url: URL(string: "https://updates.cdn-apple.com/2026FallFCS/c9671975-52db-4fb5-9af2-00217169ba8d/UniversalMac_27.2_26B123_Restore.ipsw")!,
-                     bytes: 24_409 << 20, note: "The newest. Not tested with Henge yet."),
+                     bytes: 24_409 << 20, note: "Die neueste. Noch nicht getestet."),
     ]
 
     /// Selected in the Install tab when nothing is downloaded yet: the one Henge is tested with most.
@@ -132,7 +132,7 @@ final class Installer: NSObject, ObservableObject {
                 try await install(mac, ipsw: ipsw, cpus: cpus)
                 if !keepImage { try? FileManager.default.removeItem(at: ipsw) }
                 HengeLog.log("install", "\(name): installed \(release.name)")
-                phase = .done("\(release.name) is installed on \(name). Quit Henge (swipe it away) and open it again, then tap Start.")
+                phase = .done("\(release.name) ist auf \(name) installiert. Beende Simplex Mac (wegwischen), öffne es erneut und tippe auf „Starten“.")
             } catch {
                 HengeLog.log("install", "failed: \(error.localizedDescription)")
                 // A half-installed Mac is no use, and its disk can be many gigabytes. The download stays.
@@ -147,7 +147,7 @@ final class Installer: NSObject, ObservableObject {
             .volumeAvailableCapacityForImportantUsage ?? 0
         let needed = Self.spaceNeeded(r)
         if free > 0 && free < needed {
-            throw message("This install needs about \(ByteText.string(UInt64(needed))) free; this \(Device.name) has \(ByteText.string(UInt64(free))).")
+            throw message("Diese Installation braucht etwa \(ByteText.string(UInt64(needed))) freien Speicher; dieses \(Device.name) hat \(ByteText.string(UInt64(free))).")
         }
     }
 
@@ -187,7 +187,7 @@ final class Installer: NSObject, ObservableObject {
                 try await Task.sleep(nanoseconds: 3_000_000_000)
             }
         }
-        throw message("The download kept failing.")
+        throw message("Der Download ist wiederholt fehlgeschlagen.")
     }
 
 
@@ -203,11 +203,11 @@ final class Installer: NSObject, ObservableObject {
         Machines.excludeFromBackup(Machines.root)
         try? fm.removeItem(at: mac.rom)
         try fm.copyItem(at: rom, to: mac.rom)
-        guard fm.createFile(atPath: mac.disk.path, contents: nil) else { throw message("Cannot create the disk.") }
+        guard fm.createFile(atPath: mac.disk.path, contents: nil) else { throw message("Die Festplatte kann nicht erstellt werden.") }
         let h = try FileHandle(forWritingTo: mac.disk)
         try h.truncate(atOffset: UInt64(64) << 30) // sparse: blocks are only used as macOS writes them
         try h.close()
-        guard henge_make_aux(mac.aux.path) == 0 else { throw message("Cannot create the auxiliary storage.") }
+        guard henge_make_aux(mac.aux.path) == 0 else { throw message("Der Zusatzspeicher kann nicht erstellt werden.") }
         let info: [String: Any] = ["name": name, "ecid": ecid, "seed": 0, "ramMB": ramMB]
         try JSONSerialization.data(withJSONObject: info).write(to: mac.directory.appendingPathComponent("machine.json"))
         mac.diskBytes = 64 << 30
@@ -218,14 +218,14 @@ final class Installer: NSObject, ObservableObject {
     // MARK: The restore
 
     private func install(_ mac: VirtualMac, ipsw: URL, cpus: Int) async throws {
-        guard JITBootstrap.ready else { throw message("Turn on JIT first: the installer runs the Mac's own restore system, which needs it.") }
+        guard JITBootstrap.ready else { throw message("Schalte zuerst JIT ein: Der Installer startet das Wiederherstellungssystem des Macs, das JIT braucht.") }
         // The restore needs 2 GB, whatever the Mac is set to use afterwards, and gets at most 4 GB: the restore system
         // caches the ~15 GB it writes, so it fills all the memory it is given, and 10 GB of a 12 GB iPhone's RAM in use
         // (it is outside Henge's footprint, so iOS does not stop it) stalls the whole phone two thirds of the way through.
         var restoring = mac
         restoring.ramMB = min(max(mac.ramMB, 2048), 4096)
         let ram = GuestMemory.prepare(restoring)
-        guard ram >= 2048 else { throw message("Installing needs a few more GB of free storage for the Mac's memory.") }
+        guard ram >= 2048 else { throw message("Die Installation braucht ein paar GB mehr freien Speicher für den Arbeitsspeicher des Macs.") }
         setenv("HV_WRITE_CACHE", "0", 1) // the ~15 GB the restore writes goes straight to storage (host/disk.c); this process runs no other Mac
         let work = mac.directory.appendingPathComponent("restore", isDirectory: true)
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
@@ -238,13 +238,13 @@ final class Installer: NSObject, ObservableObject {
             step = Int(henge_install_step())
             stepProgress = henge_install_progress()
             if step == 100 { break }
-            if step == 101 { throw message("The restore failed. The log (Settings, or Documents/henge.log) says why.") }
+            if step == 101 { throw message("Die Wiederherstellung ist fehlgeschlagen. Das Protokoll (Einstellungen oder Documents/henge.log) sagt, warum.") }
             if henge_vm_state() == 2 && step < 100 {
                 // The restore ends with the machine restarting, and idevicerestore finishes a
                 // little after; a stop with no result after that is a failure.
                 for _ in 0..<90 where henge_install_step() < 100 { try await Task.sleep(nanoseconds: 1_000_000_000) }
                 if henge_install_step() == 100 { break }
-                throw message("The machine stopped during the restore (\(String(cString: henge_vm_exit_reason()))).")
+                throw message("Der Mac wurde während der Wiederherstellung gestoppt (\(String(cString: henge_vm_exit_reason()))).")
             }
         }
         // In the list before anything else: stopping the restore system can take a while, and if Henge is
@@ -258,13 +258,13 @@ final class Installer: NSObject, ObservableObject {
 
     static func stepName(_ step: Int) -> String {
         switch step {
-        case 0: return "Finding the Mac"
-        case 1: return "Starting the installer"
-        case 2: return "Writing macOS"
-        case 3: return "Checking macOS"
-        case 4: return "Installing firmware"
-        case 6, 7: return "Installing system files"
-        default: return "Installing"
+        case 0: return "Mac wird gesucht"
+        case 1: return "Installer wird gestartet"
+        case 2: return "macOS wird geschrieben"
+        case 3: return "macOS wird geprüft"
+        case 4: return "Firmware wird installiert"
+        case 6, 7: return "Systemdateien werden installiert"
+        default: return "Installation"
         }
     }
 

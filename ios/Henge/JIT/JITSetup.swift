@@ -16,11 +16,11 @@ enum JITMethod: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .automatic: return "Automatic"
+        case .automatic: return "Automatisch"
         case .stikDebug: return "StikDebug"
         case .trollStore: return "TrollStore"
         case .jailbreak: return "Jailbreak (Dopamine)"
-        case .builtIn: return "Built-in StikJIT"
+        case .builtIn: return "Eingebautes StikJIT"
         }
     }
 }
@@ -68,7 +68,7 @@ enum JITPairingFileStore {
               let identifier = dictionary["identifier"] as? String, !identifier.isEmpty else {
             throw NSError(domain: "HengeJIT", code: 10,
                           userInfo: [NSLocalizedDescriptionKey:
-                            "That is not a remote pairing file. Make one with the StikDebug pairing-file guide and try again."])
+                            "Das ist keine Remote-Kopplungsdatei. Erstelle eine mit der StikDebug-Anleitung und versuche es erneut."])
         }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try data.write(to: url, options: .atomic)
@@ -130,12 +130,12 @@ final class JITCoordinator: ObservableObject {
 
     var automaticDescription: String {
         switch resolvedMethod {
-        case .stikDebug: return "StikDebug is installed, so Henge will open it."
-        case .trollStore: return "TrollStore is installed, so Henge will ask it to enable JIT."
-        case .jailbreak: return "This device is jailbroken, so JIT comes from the jailbreak's Allow JIT in Apps setting."
+        case .stikDebug: return "StikDebug ist installiert, Simplex Mac öffnet es also."
+        case .trollStore: return "TrollStore ist installiert, Simplex Mac bittet es also, JIT einzuschalten."
+        case .jailbreak: return "Dieses Gerät ist gejailbreakt, JIT kommt also von der Jailbreak-Einstellung „Allow JIT in Apps“."
         default: return hasPairing
-            ? "Henge will use its paired built-in helper."
-            : "StikDebug, TrollStore and a jailbreak were not found, so Henge will use its built-in helper."
+            ? "Simplex Mac nutzt seinen gekoppelten eingebauten Helfer."
+            : "StikDebug, TrollStore und ein Jailbreak wurden nicht gefunden, Simplex Mac nutzt also seinen eingebauten Helfer."
         }
     }
 
@@ -222,19 +222,19 @@ final class JITCoordinator: ObservableObject {
             } else if JITBootstrap.requestTrollStoreAttach() {
                 awaitTrollStore()
             } else {
-                error = "StikDebug is not installed. Install it, or set up Built-in StikJIT."
+                error = "StikDebug ist nicht installiert. Installiere es oder richte das eingebaute StikJIT ein."
                 showSetup = true
             }
         case .trollStore:
             if JITBootstrap.requestTrollStoreAttach() {
                 awaitTrollStore()
             } else {
-                error = "TrollStore could not be opened. Install Henge through TrollStore, or choose another method."
+                error = "TrollStore konnte nicht geöffnet werden. Installiere Simplex Mac über TrollStore oder wähle eine andere Methode."
                 showSetup = true
             }
         case .jailbreak:
             // Nothing to ask: a jailbreak marks an app as debugged as it opens, if it has been told to. Say what to turn on.
-            error = "Turn on Allow JIT in Apps in Dopamine's settings, then open Henge again."
+            error = "Schalte in den Dopamine-Einstellungen „Allow JIT in Apps“ ein und öffne Simplex Mac erneut."
             showSetup = true
         case .builtIn:
             guard HengeBuiltInJIT.isAvailable, hasPairing else {
@@ -251,20 +251,20 @@ final class JITCoordinator: ObservableObject {
     /// it never comes -- TrollStore only answers enable-jit once its URL Scheme setting is on.
     private func awaitTrollStore() {
         busy = true
-        status = "Waiting for TrollStore to enable JIT…"
+        status = "Warte, bis TrollStore JIT einschaltet …"
         log("waiting for TrollStore's attach")
         _ = Self.waitForDebugger(timeout: 60) { [weak self] attached in
             guard let self else { return }
             busy = false
             if attached {
-                status = "JIT is on."
+                status = "JIT ist an."
                 error = nil
                 attachGeneration += 1
                 log("TrollStore enabled JIT")
             } else {
                 status = nil
-                error = "TrollStore did not enable JIT. In TrollStore's Settings turn on URL Scheme, and make sure Henge was "
-                      + "installed through TrollStore (or is signed with get-task-allow)."
+                error = "TrollStore hat JIT nicht eingeschaltet. Schalte in den TrollStore-Einstellungen „URL Scheme“ ein und achte darauf, dass Simplex Mac "
+                      + "über TrollStore installiert wurde (oder mit get-task-allow signiert ist)."
                 log("TrollStore did not enable JIT within a minute")
                 showSetup = true
             }
@@ -275,19 +275,19 @@ final class JITCoordinator: ObservableObject {
     /// so watch CS_DEBUGGED the same way awaitTrollStore does.
     private func awaitStikDebug() {
         busy = true
-        status = "Waiting for StikDebug to attach…"
+        status = "Warte, bis sich StikDebug anhängt …"
         log("waiting for StikDebug's attach")
         _ = Self.waitForDebugger(timeout: 60) { [weak self] attached in
             guard let self else { return }
             busy = false
             if attached {
-                status = "JIT is on."
+                status = "JIT ist an."
                 error = nil
                 attachGeneration += 1
                 log("StikDebug attached")
             } else {
                 status = nil
-                error = "StikDebug did not attach within a minute. Make sure it's installed and try again."
+                error = "StikDebug hat sich nicht innerhalb einer Minute angehängt. Prüfe, ob es installiert ist, und versuche es erneut."
                 log("StikDebug did not attach within a minute")
                 showSetup = true
             }
@@ -301,7 +301,7 @@ final class JITCoordinator: ObservableObject {
             refreshPairingStatus()
             method = .builtIn
             prepared = false
-            status = "Pairing file imported."
+            status = "Kopplungsdatei importiert."
             error = nil
             log("pairing file imported")
         } catch {
@@ -315,7 +315,7 @@ final class JITCoordinator: ObservableObject {
         refreshPairingStatus()
         method = .builtIn
         prepared = false
-        status = "Paired on this device."
+        status = "Auf diesem Gerät gekoppelt."
         error = nil
     }
 
@@ -326,7 +326,7 @@ final class JITCoordinator: ObservableObject {
         error = nil
         connectionProblem = nil
         advice = nil
-        if attempt == 1 { status = "Checking LocalDevVPN and the Developer Disk Image…" }
+        if attempt == 1 { status = "Prüfe LocalDevVPN und das Developer Disk Image …" }
         RemotePairingPortDiscovery.resolve { port in
             HengeBuiltInJIT.send(.prepare(pairingData: pairing, rsdPort: port)) { [weak self] result in
                 guard let self else { return }
@@ -355,7 +355,7 @@ final class JITCoordinator: ObservableObject {
     func enableBuiltIn(attempt: Int = 1) {
         guard let pairing = builtInPairing() else { return }
         guard let script = JITBootstrap.scriptBase64 else {
-            error = "Henge's JIT script is missing from this installation. Reinstall Henge."
+            error = "Das JIT-Skript fehlt in dieser Installation. Installiere Simplex Mac neu."
             return
         }
 
@@ -364,7 +364,7 @@ final class JITCoordinator: ObservableObject {
         error = nil
         connectionProblem = nil
         advice = nil
-        if attempt == 1 { status = "Starting Henge's JIT helper…" }
+        if attempt == 1 { status = "Starte den JIT-Helfer …" }
         log("enabling JIT with the built-in helper" + (attempt > 1 ? " (attempt \(attempt))" : ""))
         var readiness: Timer?
         var finished = false
@@ -379,7 +379,7 @@ final class JITCoordinator: ObservableObject {
                 log("built-in JIT failed: \(failure)")
                 showSetup = true
             } else {
-                status = "JIT is on."
+                status = "JIT ist an."
                 error = nil
                 attachGeneration += 1
                 log("built-in helper attached")
@@ -390,10 +390,10 @@ final class JITCoordinator: ObservableObject {
             HengeBuiltInJIT.send(
                 .enable(targetPID: getpid(), pairingData: pairing, scriptBase64: script, rsdPort: port),
                 started: { [weak self] in
-                    if attempt == 1 { self?.status = "Waiting for the helper to attach…" }
+                    if attempt == 1 { self?.status = "Warte, bis sich der Helfer anhängt …" }
                     readiness = Self.waitForDebugger { attached in
-                        finish(attached ? nil : "The helper did not attach within 90 seconds. "
-                                              + "Check that LocalDevVPN is connected, then try again.")
+                        finish(attached ? nil : "Der Helfer hat sich nicht innerhalb von 90 Sekunden angehängt. "
+                                              + "Prüfe, ob LocalDevVPN verbunden ist, und versuche es erneut.")
                     }
                 },
                 completion: { [weak self] result in
@@ -424,7 +424,7 @@ final class JITCoordinator: ObservableObject {
     func resetDDI() {
         busy = true
         error = nil
-        status = "Resetting the Developer Disk Image cache…"
+        status = "Setze den Developer-Disk-Image-Cache zurück …"
         HengeBuiltInJIT.send(.resetDDI) { [weak self] result in
             guard let self else { return }
             busy = false
@@ -446,7 +446,7 @@ final class JITCoordinator: ObservableObject {
             return nil
         }
         guard let pairing = try? JITPairingFileStore.data() else {
-            error = "Pair this device or import its pairing file first."
+            error = "Kopple zuerst dieses Gerät oder importiere seine Kopplungsdatei."
             return nil
         }
         return pairing
@@ -520,7 +520,7 @@ enum LocalDevVPN {
         }
         return false
     }
-    static var actionTitle: String { isInstalled ? "Connect LocalDevVPN" : "Get LocalDevVPN" }
+    static var actionTitle: String { isInstalled ? "LocalDevVPN verbinden" : "LocalDevVPN laden" }
 
     @MainActor static func open() {
         let installed = isInstalled

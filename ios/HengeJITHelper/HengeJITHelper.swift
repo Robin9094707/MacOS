@@ -34,13 +34,13 @@ private enum HengeJITWork {
             try manager.createDirectory(at: root, withIntermediateDirectories: true)
             if request.operation == .resetDDI {
                 try StikJIT.resetCachedDDI(at: paths)
-                return .init(success: true, message: "Developer Disk Image cache reset.",
+                return .init(success: true, message: "Developer-Disk-Image-Cache zurückgesetzt.",
                              txmPresent: StikJIT.isTXMPresent)
             }
 
             guard let pairingData = request.pairingData, !pairingData.isEmpty else {
                 throw NSError(domain: "HengeJITHelper", code: 1,
-                              userInfo: [NSLocalizedDescriptionKey: "The pairing file was not provided."])
+                              userInfo: [NSLocalizedDescriptionKey: "Die Kopplungsdatei wurde nicht übergeben."])
             }
             let pairingURL = root.appendingPathComponent("pairingFile-\(UUID().uuidString).plist")
             try pairingData.write(to: pairingURL, options: .atomic)
@@ -62,12 +62,12 @@ private enum HengeJITWork {
                 switch readiness {
                 case .ready(let security):
                     return .init(success: true,
-                                 message: "LocalDevVPN is reachable and the Developer Disk Image is ready." + portNote,
+                                 message: "LocalDevVPN ist erreichbar und das Developer Disk Image ist bereit." + portNote,
                                  txmPresent: security.isTXMPresent)
                 case .unreachable(let reason), .preparationFailed(let reason):
                     return .init(success: false, message: reason + portNote, txmPresent: StikJIT.isTXMPresent)
                 @unknown default:
-                    return .init(success: false, message: "StikJIT returned an unknown preparation state.",
+                    return .init(success: false, message: "StikJIT hat einen unbekannten Vorbereitungsstatus gemeldet.",
                                  txmPresent: StikJIT.isTXMPresent)
                 }
             case .enable:
@@ -75,7 +75,7 @@ private enum HengeJITWork {
                       let scriptBase64 = request.scriptBase64, !scriptBase64.isEmpty else {
                     throw NSError(domain: "HengeJITHelper", code: 2,
                                   userInfo: [NSLocalizedDescriptionKey:
-                                    "The target process or Henge's JIT script was not provided."])
+                                    "Der Zielprozess oder das JIT-Skript wurde nicht übergeben."])
                 }
                 try StikJIT.enableJIT(
                     targetPID: targetPID,
@@ -86,7 +86,7 @@ private enum HengeJITWork {
                     forceScript: true,
                     preparationProgress: { NSLog("[HengeJIT] prepare: %@", String(describing: $0)) },
                     progress: { NSLog("[HengeJIT] %@", $0) })
-                return .init(success: true, message: "Henge detached cleanly from its built-in JIT helper." + portNote,
+                return .init(success: true, message: "Die App hat sich sauber vom eingebauten JIT-Helfer gelöst." + portNote,
                              txmPresent: StikJIT.isTXMPresent)
             case .resetDDI:
                 preconditionFailure("Handled above")
@@ -132,7 +132,7 @@ final class HengeJITHelperHandler: NSObject, NSExtensionRequestHandling {
             if let data, let request = try? JSONDecoder().decode(HengeJITRequest.self, from: data) {
                 response = HengeJITWork.handle(request)
             } else {
-                response = .init(success: false, message: "Henge's JIT helper received no request.",
+                response = .init(success: false, message: "Der JIT-Helfer hat keine Anfrage erhalten.",
                                  txmPresent: nil)
             }
             let item = NSExtensionItem()

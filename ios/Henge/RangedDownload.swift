@@ -32,7 +32,7 @@ final class RangedDownload: NSObject, URLSessionDataDelegate {
     func run() async throws {
         if !FileManager.default.fileExists(atPath: part.path) {
             guard FileManager.default.createFile(atPath: part.path, contents: nil) else {
-                throw NSError(domain: "Henge", code: 4, userInfo: [NSLocalizedDescriptionKey: "Henge couldn't create the download file."])
+                throw NSError(domain: "Henge", code: 4, userInfo: [NSLocalizedDescriptionKey: "Die Download-Datei konnte nicht erstellt werden."])
             }
         }
         have = Self.size(of: part)
@@ -85,7 +85,7 @@ final class RangedDownload: NSObject, URLSessionDataDelegate {
                 let start = Int64(range.split(separator: " ").last?.split(separator: "-").first ?? "") ?? -1
                 total = Int64(range.split(separator: "/").last ?? "") ?? 0
                 guard start == have else {
-                    throw NSError(domain: "Henge", code: 5, userInfo: [NSLocalizedDescriptionKey: "Apple's server sent the wrong part of the file."])
+                    throw NSError(domain: "Henge", code: 5, userInfo: [NSLocalizedDescriptionKey: "Apples Server hat den falschen Teil der Datei geschickt."])
                 }
             case 200: // the whole file: start again
                 total = response.expectedContentLength
@@ -135,7 +135,7 @@ final class RangedDownload: NSObject, URLSessionDataDelegate {
         if let failure { finish(failure); return }
         if let error { finish(error); return }
         if total > 0 && have != total {
-            finish(NSError(domain: "Henge", code: 7, userInfo: [NSLocalizedDescriptionKey: "The download ended early (\(have) of \(total) bytes)."]))
+            finish(NSError(domain: "Henge", code: 7, userInfo: [NSLocalizedDescriptionKey: "Der Download endete zu früh (\(have) von \(total) Bytes)."]))
             return
         }
         finish(nil)

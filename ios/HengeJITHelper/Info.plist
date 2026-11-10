@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<string>de</string>
 	<key>CFBundleDisplayName</key>
-	<string>Henge JIT Helper</string>
+	<string>Simplex Mac JIT-Helfer</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -41,7 +41,7 @@
 		<string>HengeJITHelperHandler</string>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Henge's JIT helper looks up the port this device's pairing service listens on.</string>
+	<string>Der JIT-Helfer von Simplex Mac sucht den Port, auf dem der Kopplungsdienst dieses Geräts lauscht.</string>
 	<key>XPCService</key>
 	<dict>
 		<key>ServiceType</key>

@@ -28,7 +28,7 @@ struct JITAdviceTests {
         let cellular = JITNetworkAdvice.advice(forHelperMessage: timeout, situation: .cellularOnly)
         precondition(cellular != nil)
         let text = cellular?.message ?? ""
-        for phrase in ["LocalDevVPN", "cellular", "Cellular Data", "Control Center", "Wi-Fi", "hotspot", "Tailscale"] {
+        for phrase in ["LocalDevVPN", "Mobilfunk", "Mobile Daten", "Kontrollzentrum", "WLAN", "Hotspot", "Tailscale"] {
             precondition(text.contains(phrase), "cellular advice should mention \(phrase)")
         }
         precondition(!text.contains("!"))
@@ -36,15 +36,15 @@ struct JITAdviceTests {
 
         // Advice: on Wi-Fi the same timeout still means LocalDevVPN is off.
         let wifiAdvice = JITNetworkAdvice.advice(forHelperMessage: timeout, situation: .wifi)
-        precondition(wifiAdvice?.message == "Henge couldn't reach this device. Connect LocalDevVPN, then try again.")
+        precondition(wifiAdvice?.message == "Simplex Mac konnte dieses Gerät nicht erreichen. Verbinde LocalDevVPN und versuche es erneut.")
         precondition(wifiAdvice?.actions == [.connectLocalDevVPN])
 
         // Advice: a pairing error keeps the pairing advice on every network.
         let reset = "Connection reset by peer while talking to the device"
         for situation in [NetworkSituation.wifi, .cellularOnly, .offline, .wired] {
             let pairing = JITNetworkAdvice.advice(forHelperMessage: reset, situation: situation)
-            precondition(pairing?.message.contains("Pair again") == true, "pairing advice on \(situation)")
-            precondition(pairing?.message.contains("Cellular Data") == false)
+            precondition(pairing?.message.contains("Kopple erneut") == true, "pairing advice on \(situation)")
+            precondition(pairing?.message.contains("Mobile Daten") == false)
             precondition(pairing?.actions == [.pairAgain, .connectLocalDevVPN])
         }
 
@@ -77,8 +77,8 @@ struct JITAdviceTests {
 
         // Retry: what the screen says while it waits.
         let retrying = JITRetryPolicy.statusText(nextAttempt: 2)
-        precondition(retrying.hasPrefix("Retrying") && retrying.contains("2 of 3") && !retrying.contains("!"))
-        precondition(JITRetryPolicy.statusText(nextAttempt: 3).contains("3 of 3"))
+        precondition(retrying.hasPrefix("Neuer Versuch") && retrying.contains("2 von 3") && !retrying.contains("!"))
+        precondition(JITRetryPolicy.statusText(nextAttempt: 3).contains("3 von 3"))
         print("JIT advice: all checks passed")
     }
 }

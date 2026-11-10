@@ -134,13 +134,13 @@ enum JITBootstrap {
             HengeLog.log("jit", "no trap servicer, but MAP_JIT executes here -- "
                              + "QEMU will map its own buffer")
         } else {
-            lastFailure = "The debugger is attached but is not answering trap "
-                        + "requests, and this device will not execute a MAP_JIT "
-                        + "mapping either, so no executable memory could be "
-                        + "claimed. This happens when Henge was opened from StikDebug's "
-                        + "app list, which attaches without Henge's script: open Henge "
-                        + "from the Home Screen and tap Turn On JIT. It also happens "
-                        + "inside another container app."
+            lastFailure = "Der Debugger ist angehängt, beantwortet aber keine Trap-"
+                        + "Anfragen, und dieses Gerät führt auch kein MAP_JIT-"
+                        + "Mapping aus. Es konnte also kein ausführbarer Speicher "
+                        + "belegt werden. Das passiert, wenn Simplex Mac aus der App-Liste von StikDebug "
+                        + "geöffnet wurde, die sich ohne das Skript anhängt: Öffne Simplex Mac "
+                        + "vom Home-Bildschirm und tippe auf „JIT einschalten“. Es passiert auch "
+                        + "in einer anderen Container-App."
         }
         HengeLog.log("jit", ok ? "JIT region secured; it will be handed to QEMU later"
                               : "JIT prewarm FAILED -- StikDebug is not servicing traps")

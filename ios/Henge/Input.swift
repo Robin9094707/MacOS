@@ -233,7 +233,7 @@ struct ModifierRow: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Desk.raised, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
-            .accessibilityLabel("Hide keyboard")
+            .accessibilityLabel("Tastatur ausblenden")
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 6)

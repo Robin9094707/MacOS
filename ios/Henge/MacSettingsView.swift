@@ -23,15 +23,15 @@ struct MacSettingsView: View {
                     .deskCard()
                     .onSubmit(save)
 
-                DeskHeading("Memory")
+                DeskHeading("Arbeitsspeicher")
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("\(mac.ramMB / 1024) GB").font(.system(size: 26, weight: .bold))
                         Spacer()
-                        Text(Entitlements.increasedMemory ? "Outside the app's limit once JIT is on" : "Used from free storage if needed")
+                        Text(Entitlements.increasedMemory ? "Außerhalb des App-Limits, sobald JIT an ist" : "Bei Bedarf aus freiem Speicherplatz")
                             .font(.system(size: 13)).foregroundStyle(Desk.dim).multilineTextAlignment(.trailing)
                     }
-                    Stepper("Memory", value: Binding(get: { mac.ramMB / 1024 }, set: { mac.ramMB = $0 * 1024; save() }), in: Device.memoryChoices)
+                    Stepper("Arbeitsspeicher", value: Binding(get: { mac.ramMB / 1024 }, set: { mac.ramMB = $0 * 1024; save() }), in: Device.memoryChoices)
                         .font(.system(size: 16))
                     if let note = Device.memoryNote(mac.ramMB / 1024) {
                         Text(note).font(.system(size: 13)).foregroundStyle(Desk.dim)
@@ -40,7 +40,7 @@ struct MacSettingsView: View {
                 .padding(17)
                 .deskCard()
 
-                DeskHeading("Processors")
+                DeskHeading("Prozessoren")
                 Stepper(value: $cpus, in: 1...6) {
                     HStack {
                         Text("CPUs").font(.system(size: 16))
@@ -53,9 +53,9 @@ struct MacSettingsView: View {
                 .deskCard()
 
                 if Device.fittingScreen.height != 1080 {
-                    DeskHeading("Screen")
+                    DeskHeading("Bildschirm")
                     VStack(alignment: .leading, spacing: 12) {
-                        Picker("Screen", selection: Binding(get: {
+                        Picker("Bildschirm", selection: Binding(get: {
                             if mac.isRetina { return "retina" }
                             if mac.screen.width == Device.performanceScreen.width,
                                mac.screen.height == Device.performanceScreen.height { return "performance" }
@@ -73,32 +73,32 @@ struct MacSettingsView: View {
                         })) {
                             if Device.isPad {
                                 Text("Retina").tag("retina")
-                                Text("Performance").tag("performance")
+                                Text("Leistung").tag("performance")
                             }
-                            Text("Fit this \(Device.name)").tag("fit")
+                            Text("An dieses \(Device.name) anpassen").tag("fit")
                             Text("16:9").tag("wide")
                         }
                         .pickerStyle(.segmented)
-                        Text("\(mac.screen.width) × \(mac.screen.height). \(Device.isPad ? "Performance renders about 30% fewer pixels. " : "")Changes apply the next time this Mac starts.")
+                        Text("\(mac.screen.width) × \(mac.screen.height). \(Device.isPad ? "„Leistung“ berechnet etwa 30 % weniger Pixel. " : "")Änderungen gelten beim nächsten Start dieses Macs.")
                             .font(.system(size: 13)).foregroundStyle(Desk.dim)
                     }
                     .padding(17)
                     .deskCard()
                 }
 
-                DeskHeading("Storage")
+                DeskHeading("Speicherplatz")
                 VStack(spacing: 11) {
                     HStack {
-                        Text("\(ByteText.string(UInt64(max(mac.bytesUsed, 0)))) used").font(.system(size: 16))
+                        Text("\(ByteText.string(UInt64(max(mac.bytesUsed, 0)))) belegt").font(.system(size: 16))
                         Spacer()
-                        Text("of \(ByteText.string(UInt64(max(mac.diskBytes, 0))))").font(.system(size: 16)).foregroundStyle(Desk.dim)
+                        Text("von \(ByteText.string(UInt64(max(mac.diskBytes, 0))))").font(.system(size: 16)).foregroundStyle(Desk.dim)
                     }
                     DeskBar(fraction: Double(mac.bytesUsed) / Double(max(mac.diskBytes, 1)))
                 }
                 .padding(17)
                 .deskCard()
 
-                DeskHeading("Manage")
+                DeskHeading("Verwalten")
                 manage
             }
             .padding(.horizontal, 16)
@@ -115,13 +115,13 @@ struct MacSettingsView: View {
             case .failure(let error): machines.lastError = error.localizedDescription
             }
         }
-        .confirmationDialog("Delete \(mac.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) {
+        .confirmationDialog("\(mac.name) löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) {
                 machines.delete(mac.id)
                 dismiss()
             }
         } message: {
-            Text("Its disk is removed from this \(Device.name).")
+            Text("Seine Festplatte wird von diesem \(Device.name) entfernt.")
         }
     }
 
@@ -129,26 +129,26 @@ struct MacSettingsView: View {
         VStack(spacing: 0) {
             if let name = machines.exporting {
                 VStack(alignment: .leading, spacing: 9) {
-                    Text("Exporting \(name)… keep Henge open").font(.system(size: 15))
+                    Text("Exportiere \(name) … Simplex Mac geöffnet lassen").font(.system(size: 15))
                     DeskBar(fraction: machines.exported)
                 }
                 .padding(17)
             } else {
-                row("Export", symbol: "square.and.arrow.up", tint: Desk.accentLight) { machines.export(mac) }
+                row("Exportieren", symbol: "square.and.arrow.up", tint: Desk.accentLight) { machines.export(mac) }
             }
             if let folder = machines.lastExport {
                 divider
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Saved in Files, under Henge, Exports, \(folder.lastPathComponent). Deleting Henge deletes it too, so move it somewhere else first.")
+                    Text("Gesichert in der Dateien-App unter Simplex Mac › Exports › \(folder.lastPathComponent). Wird die App gelöscht, ist es auch weg – verschiebe es also vorher woandershin.")
                         .font(.system(size: 13)).foregroundStyle(Desk.dim)
-                    Button("Move Out of Henge…") { movingExport = true }
+                    Button("Aus der App verschieben …") { movingExport = true }
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(Desk.accentLight)
                 }
                 .padding(17)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             divider
-            row("Delete this Mac", symbol: nil, tint: Desk.bad) { confirmDelete = true }
+            row("Diesen Mac löschen", symbol: nil, tint: Desk.bad) { confirmDelete = true }
         }
         .deskCard()
     }

@@ -51,10 +51,10 @@ struct RootView: View {
                     .tabItem { Label("Macs", systemImage: "macwindow") }
                     .tag(Tab.macs)
                 InstallView()
-                    .tabItem { Label("Install", systemImage: "arrow.down.circle") }
+                    .tabItem { Label("Installieren", systemImage: "arrow.down.circle") }
                     .tag(Tab.install)
                 SettingsView()
-                    .tabItem { Label("Settings", systemImage: "gearshape") }
+                    .tabItem { Label("Einstellungen", systemImage: "gearshape") }
                     .tag(Tab.settings)
             }
             .tint(Desk.accentLight)

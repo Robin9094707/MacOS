@@ -65,8 +65,8 @@ struct SessionView: View {
                         if display.isExternal && state != 2 {
                             VStack(spacing: 8) {
                                 Image(systemName: "display").font(.largeTitle)
-                                Text("Mac on external display").font(.headline)
-                                Text("Use the trackpad, keyboard or a connected mouse.")
+                                Text("Mac auf externem Bildschirm").font(.headline)
+                                Text("Nutze das Trackpad, die Tastatur oder eine angeschlossene Maus.")
                                     .font(.subheadline)
                             }
                             .foregroundStyle(.white)
@@ -100,7 +100,7 @@ struct SessionView: View {
                         floatingControls(layout)
                     }
                     if pointerRefused && !showRevealHint {
-                        Label("Make Henge full screen to use the trackpad or mouse as the Mac's", systemImage: "cursorarrow.rays")
+                        Label("Stelle Simplex Mac auf Vollbild, um Trackpad oder Maus für den Mac zu nutzen", systemImage: "cursorarrow.rays")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 18).padding(.vertical, 12)
@@ -110,7 +110,7 @@ struct SessionView: View {
                             .allowsHitTesting(false)
                     }
                     if showRevealHint {
-                        Label("Tap with four fingers to show the controls", systemImage: "hand.tap")
+                        Label("Mit vier Fingern tippen, um die Steuerung zu zeigen", systemImage: "hand.tap")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 18).padding(.vertical, 12)
@@ -120,7 +120,7 @@ struct SessionView: View {
                             .allowsHitTesting(false)
                     }
                     if showWallpaperTip && !showRevealHint && !pointerRefused {
-                        Label("For more speed, give this Mac a still wallpaper and set its screen saver to Never in System Settings.", systemImage: "speedometer")
+                        Label("Für mehr Tempo: Gib diesem Mac ein unbewegtes Hintergrundbild und stelle den Bildschirmschoner in den Systemeinstellungen auf „Nie“.", systemImage: "speedometer")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(.white)
                             .multilineTextAlignment(.leading)
@@ -166,9 +166,9 @@ struct SessionView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showDetails) { details }
         .confirmationDialog("Shut down \(mac.name)?", isPresented: $confirmStop, titleVisibility: .visible) {
-            Button("Shut Down", role: .destructive) { finish() }
+            Button("Ausschalten", role: .destructive) { finish() }
         } message: {
-            Text("This turns the Mac off at once. Anything not saved on it is lost.")
+            Text("Der Mac wird sofort ausgeschaltet. Alles, was darauf nicht gesichert ist, geht verloren.")
         }
         .onChange(of: zoomed) { on in
             zoomFollowing?.cancel()
@@ -285,17 +285,17 @@ struct SessionView: View {
     @ViewBuilder private func uprightControls(_ layout: Layout) -> some View {
         if !typing && !controlsHidden {
             HStack {
-                tool("eye.slash", "Hide controls") { hideControls() }
+                tool("eye.slash", "Steuerung ausblenden") { hideControls() }
                 Spacer()
-                tool("keyboard", "Keyboard") { typing = true }
+                tool("keyboard", "Tastatur") { typing = true }
                 Spacer()
                 pasteTool
                 Spacer()
-                tool("plus.magnifyingglass", "Zoom in") { zoomed = true }
+                tool("plus.magnifyingglass", "Vergrößern") { zoomed = true }
                 Spacer()
                 tool("info.circle", "Details") { showDetails = true }
                 Spacer()
-                tool("power", "Shut down", tint: Desk.bad) { stopTapped() }
+                tool("power", "Ausschalten", tint: Desk.bad) { stopTapped() }
             }
             .padding(.horizontal, 22)
             .frame(width: layout.pad.width, height: 54)
@@ -316,19 +316,19 @@ struct SessionView: View {
                     Text("Trackpad").font(.system(size: 14)).foregroundStyle(Desk.faint).allowsHitTesting(false)
                 } else {
                     VStack(spacing: 6) {
-                        hint("Drag", "to move")
-                        hint("Tap", "to click")
-                        hint("Hold, then drag", "to grab")
-                        hint("Two fingers", "to scroll")
+                        hint("Ziehen", "zum Bewegen")
+                        hint("Tippen", "zum Klicken")
+                        hint("Halten, dann ziehen", "zum Greifen")
+                        hint("Zwei Finger", "zum Scrollen")
                     }
                     .allowsHitTesting(false)
                 }
             }
             Rectangle().fill(Desk.hairline).frame(height: 0.5)
             HStack(spacing: 0) {
-                MouseButton(title: "Click", button: 0)
+                MouseButton(title: "Klick", button: 0)
                 Rectangle().fill(Desk.hairline).frame(width: 0.5)
-                MouseButton(title: "Right-click", button: 1)
+                MouseButton(title: "Rechtsklick", button: 1)
             }
             .frame(height: compact ? 50 : 70)
         }
@@ -381,13 +381,13 @@ struct SessionView: View {
         let landscape = layout.touch.width > layout.touch.height
         let top = layout.insets.top + (landscape ? 8 : 6)
         let pill = HStack(spacing: 4) {
-            tool("eye.slash", "Hide controls", tint: .white) { hideControls() }
-            tool("keyboard", "Keyboard", tint: .white) { typing.toggle() }
+            tool("eye.slash", "Steuerung ausblenden", tint: .white) { hideControls() }
+            tool("keyboard", "Tastatur", tint: .white) { typing.toggle() }
             pasteTool
-            tool(zoomed ? "minus.magnifyingglass" : "plus.magnifyingglass", zoomed ? "Zoom out" : "Zoom in", tint: zoomed ? Desk.accentLight : .white) { zoomed.toggle() }
+            tool(zoomed ? "minus.magnifyingglass" : "plus.magnifyingglass", zoomed ? "Verkleinern" : "Vergrößern", tint: zoomed ? Desk.accentLight : .white) { zoomed.toggle() }
             tool("info.circle", "Details", tint: .white) { showDetails = true }
             Rectangle().fill(Color.white.opacity(0.3)).frame(width: 1, height: 22).padding(.horizontal, 4)
-            tool("power", "Shut down", tint: Desk.bad) { stopTapped() }
+            tool("power", "Ausschalten", tint: Desk.bad) { stopTapped() }
         }
         .padding(.horizontal, 8)
         .frame(height: 50)
@@ -457,9 +457,9 @@ struct SessionView: View {
 
     private func errorCard(_ text: String, _ layout: Layout) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("This Mac could not start").font(.system(size: 17, weight: .semibold))
+            Text("Dieser Mac konnte nicht starten").font(.system(size: 17, weight: .semibold))
             Text(text).font(.system(size: 14)).foregroundStyle(Desk.dim)
-            Button("Close") { close() }.font(.system(size: 15, weight: .semibold)).foregroundStyle(Desk.accentLight)
+            Button("Schließen") { close() }.font(.system(size: 15, weight: .semibold)).foregroundStyle(Desk.accentLight)
         }
         .padding(18)
         .frame(width: min(layout.touch.width, 390) - 32, alignment: .leading)
@@ -469,10 +469,10 @@ struct SessionView: View {
 
     private var phase: String {
         switch state {
-        case 0: return error == nil ? "Starting…" : "Not started"
-        case 1: return userCode ? "macOS is running" : "Booting"
-        case 3: return "Finishing shutdown…"
-        default: return "Stopped (\(String(cString: henge_vm_exit_reason())))"
+        case 0: return error == nil ? "Startet …" : "Nicht gestartet"
+        case 1: return userCode ? "macOS läuft" : "Fährt hoch"
+        case 3: return "Wird ausgeschaltet …"
+        default: return "Gestoppt (\(String(cString: henge_vm_exit_reason())))"
         }
     }
 
@@ -480,36 +480,36 @@ struct SessionView: View {
         NavigationStack {
             List {
                 Section(phase) {
-                    LabeledContent("CPUs on", value: "\(cpusOn) of \(cpus)")
-                    LabeledContent("Temperature", value: Self.thermalLabel(thermalState))
-                    LabeledContent("Translated blocks", value: String(format: "%.1f M/s", blocksPerSecond / 1e6))
-                    LabeledContent("Network frames", value: "\(framesOut) out, \(framesIn) in")
-                    LabeledContent("Up", value: "\(Int(Date().timeIntervalSince(started))) s")
+                    LabeledContent("Aktive CPUs", value: "\(cpusOn) von \(cpus)")
+                    LabeledContent("Temperatur", value: Self.thermalLabel(thermalState))
+                    LabeledContent("Übersetzte Blöcke", value: String(format: "%.1f M/s", blocksPerSecond / 1e6))
+                    LabeledContent("Netzwerkpakete", value: "\(framesOut) raus, \(framesIn) rein")
+                    LabeledContent("Laufzeit", value: "\(Int(Date().timeIntervalSince(started))) s")
                 }
-                Section("Display") {
-                    Toggle("Color matching", isOn: $matchScreenColors)
-                    LabeledContent("Brightness", value: "\(Int(screenBrightness * 100))%")
+                Section("Bildschirm") {
+                    Toggle("Farbabgleich", isOn: $matchScreenColors)
+                    LabeledContent("Helligkeit", value: "\(Int(screenBrightness * 100))%")
                     Slider(value: $screenBrightness, in: 0.4...1)
-                    Text("Brightness dims only the Mac's screen.")
+                    Text("Die Helligkeit dimmt nur den Bildschirm des Macs.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Section("Pointer") {
-                    Picker("Size", selection: $cursorScale) {
+                Section("Zeiger") {
+                    Picker("Größe", selection: $cursorScale) {
                         Text("1×").tag(1)
                         Text("2×").tag(2)
                         Text("3×").tag(3)
                     }
                     .pickerStyle(.segmented)
-                    Toggle("Sharp edges", isOn: $sharpCursor)
-                    LabeledContent("Scroll speed", value: String(format: "%.1f×", scrollSpeed))
+                    Toggle("Scharfe Kanten", isOn: $sharpCursor)
+                    LabeledContent("Scrollgeschwindigkeit", value: String(format: "%.1f×", scrollSpeed))
                     Slider(value: $scrollSpeed, in: 0.1...1.5)
-                    Text("The Mac supplies a small pointer image. Enlarging it can look blurry; 1× is the sharpest on an iPad. Scroll speed changes apply immediately.")
+                    Text("Der Mac liefert ein kleines Zeigerbild. Vergrößert kann es unscharf wirken; 1× ist auf einem iPad am schärfsten. Änderungen der Scrollgeschwindigkeit gelten sofort.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Section("Sharing") {
-                    LabeledContent("Clipboard and folder", value: helperRunning ? "On" : "Not set up")
+                Section("Teilen") {
+                    LabeledContent("Zwischenablage und Ordner", value: helperRunning ? "An" : "Nicht eingerichtet")
                     if !helperRunning {
-                        Button("Type the Set Up Command") {
+                        Button("Einrichtungsbefehl tippen") {
                             showDetails = false
                             Task {
                                 try? await Task.sleep(nanoseconds: 600_000_000)
@@ -518,29 +518,29 @@ struct SessionView: View {
                         }
                     }
                     Text(helperRunning
-                         ? "Put files in Files, Henge, Shared to see them in the Henge folder in this Mac's home folder. What you copy on the Mac is copied here too, and the paste button pastes from here into the Mac."
-                         : "Once for each Mac: open Terminal on the Mac, tap this, then press Return. When macOS asks about henge-agent and local networks, choose Allow. It types \(Sharing.setUpCommand) and needs the Mac's keyboard layout to be U.S.")
+                         ? "Lege Dateien in der Dateien-App unter Simplex Mac › Shared ab, dann erscheinen sie im Ordner „Henge“ im Benutzerordner dieses Macs. Was du auf dem Mac kopierst, wird auch hier kopiert, und die Einfügen-Taste fügt von hier in den Mac ein."
+                         : "Einmal pro Mac: Öffne das Terminal auf dem Mac, tippe hierauf und drücke dann Return. Wenn macOS nach henge-agent und lokalen Netzwerken fragt, wähle „Erlauben“. Es tippt \(Sharing.setUpCommand) und braucht auf dem Mac das Tastaturlayout „US“.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Section("Lighter macOS") {
-                    Button("Type the Lighter macOS Command") {
+                Section("macOS beschleunigen") {
+                    Button("Beschleunigungsbefehl tippen") {
                         showDetails = false
                         Task {
                             try? await Task.sleep(nanoseconds: 600_000_000)
                             await Keys.typeSlowly(Sharing.lightenCommand)
                         }
                     }
-                    Button("Type the Undo Command") {
+                    Button("Rückgängig-Befehl tippen") {
                         showDetails = false
                         Task {
                             try? await Task.sleep(nanoseconds: 600_000_000)
                             await Keys.typeSlowly(Sharing.unlightenCommand)
                         }
                     }
-                    Text("Less drawing for the emulated CPUs: window and Dock animations, desktop widgets, the screen saver and a moving wallpaper go. Open Terminal on the Mac, tap the button and press Return, then log out and back in. Also turn on Reduce Motion and Reduce Transparency in the Mac's System Settings, Accessibility. Undo puts it back, apart from the wallpaper. Needs the Mac's keyboard layout to be U.S.")
+                    Text("Weniger Arbeit für die emulierten CPUs: Fenster- und Dock-Animationen, Schreibtisch-Widgets, Bildschirmschoner, bewegtes Hintergrundbild, Spotlight-Indizierung, automatische Updates und Hintergrundanalysen werden abgeschaltet. Öffne das Terminal auf dem Mac, tippe auf den Knopf, drücke Return und gib bei Nachfrage das Mac-Passwort ein. Danach ab- und wieder anmelden. Rückgängig stellt alles außer dem Hintergrundbild wieder her. Braucht auf dem Mac das Tastaturlayout „US“.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Section("Log") {
+                Section("Protokoll") {
                     VStack(alignment: .leading, spacing: 1) {
                         ForEach(Array(log.suffix(30).enumerated()), id: \.offset) { _, line in
                             Text(line).font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
@@ -560,9 +560,9 @@ struct SessionView: View {
         switch state {
         case .nominal: return "Normal"
         case .fair: return "Warm"
-        case .serious: return "Hot — performance reduced"
-        case .critical: return "Critical"
-        @unknown default: return "Unknown"
+        case .serious: return "Heiß – Leistung gedrosselt"
+        case .critical: return "Kritisch"
+        @unknown default: return "Unbekannt"
         }
     }
 
@@ -590,7 +590,7 @@ struct SessionView: View {
         let ram = GuestMemory.prepare(mac)
         HengeLog.log("session", "available memory \(henge_available_memory() >> 20) MB")
         guard ram >= 1024 else {
-            error = "There is not room for this Mac's memory: it needs a few GB of free storage."
+            error = "Für den Arbeitsspeicher dieses Macs ist kein Platz: Er braucht ein paar GB freien Speicher."
             return
         }
         var buffer = [CChar](repeating: 0, count: 256)

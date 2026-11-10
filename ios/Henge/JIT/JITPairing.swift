@@ -79,7 +79,7 @@ import UserNotifications
         guard Self.isSupported, !active, session == nil else { return }
         var error: UnsafeMutablePointer<CChar>?
         guard let session = husk_rppairing_new(Self.hostName, &error) else {
-            fail(Self.take(error) ?? "Henge could not open its pairing port.")
+            fail(Self.take(error) ?? "Simplex Mac konnte seinen Kopplungsport nicht öffnen.")
             return
         }
         self.session = session
@@ -95,7 +95,7 @@ import UserNotifications
         beginBackground()
         deadline = Timer.scheduledTimer(withTimeInterval: Self.timeout, repeats: false) { _ in
             MainActor.assumeIsolated {
-                OnDevicePairing.shared.cancel(reason: "Pairing timed out. Try again when you are ready to pair from Settings.")
+                OnDevicePairing.shared.cancel(reason: "Zeit für die Kopplung abgelaufen. Versuche es erneut, wenn du bereit bist, über die Einstellungen zu koppeln.")
             }
         }
 
@@ -140,12 +140,12 @@ import UserNotifications
         log("code shown")
         #if compiler(>=6.2)
         if #available(iOS 26.0, *), let task = continued as? BGContinuedProcessingTask {
-            task.updateTitle("Pairing code \(pin)", subtitle: "Enter it on this \(Self.deviceKind) to pair with Henge")
+            task.updateTitle("Kopplungscode \(pin)", subtitle: "Gib ihn auf diesem \(Self.deviceKind) ein, um Simplex Mac zu koppeln")
             task.progress.completedUnitCount = 1
         }
         #endif
         if UIApplication.shared.applicationState != .active {
-            notify("Henge pairing code: \(pin)", body: "Enter this code on your \(Self.deviceKind) to finish pairing.")
+            notify("Simplex Mac Kopplungscode: \(pin)", body: "Gib diesen Code auf deinem \(Self.deviceKind) ein, um die Kopplung abzuschließen.")
         }
     }
 
@@ -160,19 +160,19 @@ import UserNotifications
             do {
                 guard let data else { throw NSError(domain: "HengeJIT", code: 20) }
                 try JITCoordinator.shared.storeOnDevicePairing(data)
-                phase = .paired(device: device ?? "this \(Self.deviceKind)")
+                phase = .paired(device: device ?? "dieses \(Self.deviceKind)")
                 log("paired")
                 if UIApplication.shared.applicationState != .active {
-                    notify("Paired with Henge", body: "Return to Henge to finish setting up JIT.")
+                    notify("Mit Simplex Mac gekoppelt", body: "Kehre zu Simplex Mac zurück, um JIT fertig einzurichten.")
                 }
                 endBackground(success: true)
             } catch {
-                fail("Pairing finished, but Henge could not save the pairing file.")
+                fail("Die Kopplung ist fertig, aber Simplex Mac konnte die Kopplungsdatei nicht sichern.")
             }
         case 2:
             endBackground(success: false)
         default:
-            fail(message.map { "Pairing failed: \($0)" } ?? "Pairing failed. Try again.")
+            fail(message.map { "Kopplung fehlgeschlagen: \($0)" } ?? "Kopplung fehlgeschlagen. Versuche es erneut.")
         }
     }
 
@@ -224,8 +224,8 @@ import UserNotifications
         guard active else { return }
         log("advertising failed error=\(error)")
         fail(error == DNSServiceErrorType(kDNSServiceErr_PolicyDenied)
-             ? "Henge needs Local Network access to pair. Allow it in Settings › Apps › Henge, then try again."
-             : "Henge could not announce itself on the local network. Check that Wi-Fi is on, then try again.")
+             ? "Simplex Mac braucht zum Koppeln Zugriff auf das lokale Netzwerk. Erlaube ihn unter Einstellungen › Apps › Simplex Mac und versuche es erneut."
+             : "Simplex Mac konnte sich im lokalen Netzwerk nicht ankündigen. Prüfe, ob WLAN an ist, und versuche es erneut.")
     }
 
     private func stopAdvertising() {
@@ -247,8 +247,8 @@ import UserNotifications
             MainActor.assumeIsolated {
                 let pairing = OnDevicePairing.shared
                 if pairing.continued == nil && pairing.active {
-                    pairing.cancel(reason: "iOS stopped Henge in the background before pairing finished. "
-                                         + "Try again, and pair from Settings straight away.")
+                    pairing.cancel(reason: "iOS hat Simplex Mac im Hintergrund beendet, bevor die Kopplung fertig war. "
+                                         + "Versuche es erneut und kopple sofort über die Einstellungen.")
                 }
                 pairing.endGrace()
             }
@@ -272,8 +272,8 @@ import UserNotifications
             guard ok else { log("register refused"); backgroundLimited = true; return }
             registered = identifier
         }
-        let request = BGContinuedProcessingTaskRequest(identifier: identifier, title: "Pairing with Henge",
-                                                       subtitle: "Settings › Privacy & Security › Developer Mode")
+        let request = BGContinuedProcessingTaskRequest(identifier: identifier, title: "Kopplung mit Simplex Mac",
+                                                       subtitle: "Einstellungen › Datenschutz & Sicherheit › Entwicklermodus")
         request.strategy = .fail
         do {
             try BGTaskScheduler.shared.submit(request)
@@ -290,13 +290,13 @@ import UserNotifications
         continued = task
         task.progress.totalUnitCount = 2
         if case .pin(let pin) = phase {
-            task.updateTitle("Pairing code \(pin)", subtitle: "Enter it on this \(Self.deviceKind) to pair with Henge")
+            task.updateTitle("Kopplungscode \(pin)", subtitle: "Gib ihn auf diesem \(Self.deviceKind) ein, um Simplex Mac zu koppeln")
             task.progress.completedUnitCount = 1
         }
         task.expirationHandler = {
             DispatchQueue.main.async {
                 OnDevicePairing.shared.continued = nil
-                OnDevicePairing.shared.cancel(reason: "iOS stopped the pairing in the background. Try again.")
+                OnDevicePairing.shared.cancel(reason: "iOS hat die Kopplung im Hintergrund beendet. Versuche es erneut.")
             }
         }
         log("continued-processing running")

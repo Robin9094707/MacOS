@@ -68,19 +68,19 @@ enum JITNetworkAdvice {
         guard let problem = JITConnectionProblem(helperMessage: helperMessage) else { return nil }
         if problem == .pairing {
             return JITAdvice(
-                message: "This device closed the connection, which usually means it no longer accepts "
-                       + "Henge's pairing. Pair again, and check that LocalDevVPN is connected.",
+                message: "Dieses Gerät hat die Verbindung geschlossen. Meist heißt das, dass es die Kopplung "
+                       + "nicht mehr annimmt. Kopple erneut und prüfe, ob LocalDevVPN verbunden ist.",
                 actions: [.pairAgain, .connectLocalDevVPN])
         }
         guard situation == .cellularOnly else {
-            return JITAdvice(message: "Henge couldn't reach this device. Connect LocalDevVPN, then try again.",
+            return JITAdvice(message: "Simplex Mac konnte dieses Gerät nicht erreichen. Verbinde LocalDevVPN und versuche es erneut.",
                              actions: [.connectLocalDevVPN])
         }
         return JITAdvice(
-            message: "LocalDevVPN can show Connected while iOS still sends Henge's connection over cellular. "
-                   + "Turn Cellular Data off in Control Center, wait 2 seconds, then turn it back on. "
-                   + "Or join any Wi-Fi once; a hotspot works. "
-                   + "Keep LocalDevVPN connected, turn off other VPNs such as Tailscale, then try again.",
+            message: "LocalDevVPN kann „Verbunden“ zeigen, während iOS die Verbindung noch über Mobilfunk schickt. "
+                   + "Schalte Mobile Daten im Kontrollzentrum aus, warte 2 Sekunden und schalte sie wieder ein. "
+                   + "Oder verbinde dich einmal mit irgendeinem WLAN; ein Hotspot reicht. "
+                   + "Lass LocalDevVPN verbunden, schalte andere VPNs wie Tailscale aus und versuche es erneut.",
             actions: [.connectLocalDevVPN])
     }
 }
@@ -100,7 +100,7 @@ enum JITRetryPolicy {
 
     /// Shown while waiting to try attempt `nextAttempt` (the first retry is attempt 2).
     static func statusText(nextAttempt: Int) -> String {
-        "Retrying over LocalDevVPN (\(nextAttempt) of \(maxAttempts))…"
+        "Neuer Versuch über LocalDevVPN (\(nextAttempt) von \(maxAttempts)) …"
     }
 
     static func decision(situation: NetworkSituation, problem: JITConnectionProblem, attempt: Int) -> JITRetryDecision {
