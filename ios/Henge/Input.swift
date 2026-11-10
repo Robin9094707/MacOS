@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import GameController
 
 /// Types into the Mac. Two invisible views take turns holding the keyboard: one that asks for the
 /// on-screen keyboard, with a row of the Mac's own keys above it, and one that doesn't, so that a
@@ -20,6 +21,7 @@ struct KeyboardCatcher: UIViewRepresentable {
         let typer = CatcherView()
         var typing = false
         private var hiding: NSObjectProtocol?
+        private var observers: [NSObjectProtocol] = []
 
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -29,12 +31,26 @@ struct KeyboardCatcher: UIViewRepresentable {
                                                             object: nil, queue: .main) { [weak self] _ in
                 self?.keyboardHid()
             }
+            // A USB or Bluetooth keyboard plugged in mid-session, or Henge coming back to the front, must find a
+            // view holding the keyboard, or its keys go nowhere until something else on screen is touched.
+            let center = NotificationCenter.default
+            for name in [Notification.Name.GCKeyboardDidConnect, UIApplication.didBecomeActiveNotification, UIWindow.didBecomeKeyNotification] {
+                observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    self?.takeKeyboard()
+                })
+            }
+            // A keyboard that goes away mid-press would leave the Mac holding its keys down.
+            observers.append(center.addObserver(forName: .GCKeyboardDidDisconnect, object: nil, queue: .main) { _ in
+                HardwareKeys.releaseAll()
+                StickyKeys.shared.releaseAll()
+            })
         }
 
         required init?(coder: NSCoder) { fatalError("made in code") }
 
         deinit {
             if let hiding { NotificationCenter.default.removeObserver(hiding) }
+            observers.forEach(NotificationCenter.default.removeObserver)
         }
 
         /// iPadOS's own hide-keyboard key closes the keyboard without asking the app, which then went on

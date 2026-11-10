@@ -10,6 +10,9 @@ struct SettingsView: View {
     @AppStorage(VolumeClicks.modeKey) private var volumeMode = VolumeClicks.Mode.delayHold
     @AppStorage(VolumeClicks.swapKey) private var swapButtons = false
     @AppStorage(PhysicalMouseButtons.swapKey) private var swapMouseButtons = false
+    @AppStorage(HardwareMouse.sideButtonsKey) private var sideButtonsNavigate = true
+    @AppStorage(HardwareKeys.swapCommandOptionKey) private var swapCommandOption = false
+    @AppStorage(HardwareKeys.capsLockControlKey) private var capsLockAsControl = false
     @AppStorage(EngineTuning.refreshKey) private var refreshRate = 60
     @AppStorage(EngineTuning.fastFlushKey) private var fastFlush = true
     @AppStorage(EngineTuning.wfiSpinKey) private var wfiSpin = false
@@ -60,8 +63,8 @@ struct SettingsView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 .listRowBackground(Desk.card)
-                if Device.isPad {
-                    Section("Mouse and Trackpad") {
+                Group {
+                    Section(Device.isPad ? "Mouse and Trackpad" : "Mouse") {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Pointer speed")
                             Slider(value: $mouseSpeed, in: 0.5...3)
@@ -74,11 +77,21 @@ struct SettingsView: View {
                         Toggle("Swap physical right and middle buttons", isOn: $swapMouseButtons)
                         Text("Only enable this if your physical mouse's right and middle buttons are reversed in the Mac. Touch controls stay unchanged. Restart the Mac session to apply.")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text("A Magic Keyboard or a Bluetooth mouse moves the Mac's pointer. Pointer speed changes apply the next time a Mac starts; scroll speed changes apply immediately.")
+                        Toggle("Side buttons go back and forward", isOn: $sideButtonsNavigate)
+                        Text(Device.isPad
+                             ? "A Magic Keyboard, or a USB or Bluetooth mouse, moves the Mac's pointer. Pointer speed changes apply the next time a Mac starts; scroll speed changes apply immediately."
+                             : "iPhone uses a mouse through AssistiveTouch: turn it on in Settings › Accessibility › Touch › AssistiveTouch, and pair a Bluetooth mouse under Devices there (a USB mouse just plugs in). Henge takes the mouse's own movement, buttons and wheel, and ignores the touches AssistiveTouch makes for its clicks, so each click lands once. To hide iPhone's round cursor over the Mac, set Pointer Style › Auto-Hide to a short time. Pointer speed changes apply the next time a Mac starts; scroll speed changes apply immediately.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     .listRowBackground(Desk.card)
                 }
+                Section("Keyboard") {
+                    Toggle("Swap Command and Option", isOn: $swapCommandOption)
+                    Toggle("Caps Lock is Control", isOn: $capsLockAsControl)
+                    Text("A USB or Bluetooth keyboard types straight into the Mac, every key and modifier. On a PC keyboard, swap Command and Option so the key beside the space bar is Command, as on a Mac. Changes apply the next time a Mac starts. \(Device.name) keeps a few shortcuts for itself, such as ⌘-Tab, ⌘-Space and ⌘-H.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                .listRowBackground(Desk.card)
                 if !Device.isPad {
                     Section("Trackpad") {
                         Picker("Input mode", selection: $inputMode) {

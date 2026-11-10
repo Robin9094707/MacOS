@@ -12,7 +12,8 @@ import UIKit
 ///    down so moving drags. These go out as mouse buttons alongside the pad's fingers.
 ///  - Volume buttons: the surface only points and gestures; the clicks live on the
 ///    volume keys (VolumeClicks), so a tap here does nothing.
-/// Only fingers count: a real trackpad or mouse goes through HardwareMouse.
+/// Only fingers count: a real trackpad or mouse goes through HardwareMouse. On iPhone a mouse works
+/// through AssistiveTouch, which also turns its clicks into touches: those are left to HardwareMouse.
 struct Trackpad: UIViewRepresentable {
     /// Four fingers tapped together: the session shows its hidden controls.
     static let revealTap = Notification.Name("henge.trackpad.revealTap")
@@ -36,6 +37,9 @@ struct Trackpad: UIViewRepresentable {
         private var travelled: CGFloat = 0
         private var mostFingers = 0
         private var touchesLogged = 0
+        /// Touches that are a mouse's (AssistiveTouch on iPhone), not fingers: the pad ignores them.
+        private var mouseTouches = Set<UITouch>()
+        private var mouseObserver: NSObjectProtocol?
 
         /* Touchscreen-mode clicking. */
         private var holding = false
@@ -48,6 +52,30 @@ struct Trackpad: UIViewRepresentable {
             isMultipleTouchEnabled = true
             backgroundColor = .clear
             addInteraction(UIPointerInteraction(delegate: self))
+            mouseObserver = NotificationCenter.default.addObserver(forName: HardwareMouse.buttonPressed, object: nil, queue: .main) { [weak self] _ in
+                self?.mouseClicked()
+            }
+        }
+
+        deinit {
+            if let mouseObserver { NotificationCenter.default.removeObserver(mouseObserver) }
+        }
+
+        /// A mouse button went down just as a finger did: that "finger" is AssistiveTouch's copy of the
+        /// click. Let go of it without a tap, so the click lands once, as the mouse's.
+        private func mouseClicked() {
+            guard !Device.isPad, !fingers.isEmpty, fingers.count == 1,
+                  Date().timeIntervalSince(started) < 0.25, travelled < Self.tapDistance, !holding else { return }
+            cancelHold()
+            let ts = Self.ms(fingers.map(\.touch.timestamp).max() ?? 0)
+            for finger in fingers {
+                mouseTouches.insert(finger.touch)
+                freeIds.insert(finger.id)
+                henge_vm_touch(finger.id, 2, 0, 0, ts)
+            }
+            fingers.removeAll()
+            mostFingers = 0
+            travelled = 0
         }
 
         /// Over the Mac there is only the Mac's pointer, if iPadOS hasn't locked its own away.
@@ -77,7 +105,11 @@ struct Trackpad: UIViewRepresentable {
         private static func ms(_ t: TimeInterval) -> UInt32 { UInt32(truncatingIfNeeded: Int(t * 1000)) }
 
         override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-            let touches = touches.filter { $0.type != .indirectPointer }
+            var touches = touches.filter { $0.type != .indirectPointer }
+            if HardwareMouse.shared.ownsTouches {
+                mouseTouches.formUnion(touches)
+                touches.removeAll()
+            }
             guard !touches.isEmpty else { return }
             if fingers.isEmpty {
                 started = Date()
@@ -112,7 +144,7 @@ struct Trackpad: UIViewRepresentable {
         override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
             var moved = false
             let ts = Self.ms(event?.timestamp ?? touches.first?.timestamp ?? 0)
-            for t in touches where t.type != .indirectPointer {
+            for t in touches where t.type != .indirectPointer && !mouseTouches.contains(t) {
                 guard let i = fingers.firstIndex(where: { $0.touch == t }) else { continue }
                 let now = t.location(in: self), before = t.previousLocation(in: self)
                 travelled += abs(now.x - before.x) + abs(now.y - before.y)
@@ -131,6 +163,7 @@ struct Trackpad: UIViewRepresentable {
         override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { lift(touches) }
 
         private func lift(_ touches: Set<UITouch>) {
+            mouseTouches.subtract(touches)
             var lifted: [Int32] = []
             fingers.removeAll { finger in
                 guard touches.contains(finger.touch), finger.touch.type != .indirectPointer else { return false }

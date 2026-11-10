@@ -586,6 +586,7 @@ struct SessionView: View {
         guard !Task.isCancelled else { return }
         UIApplication.shared.isIdleTimerDisabled = true
         HardwareMouse.shared.start()
+        HardwareKeys.loadSettings()
         let ram = GuestMemory.prepare(mac)
         HengeLog.log("session", "available memory \(henge_available_memory() >> 20) MB")
         guard ram >= 1024 else {

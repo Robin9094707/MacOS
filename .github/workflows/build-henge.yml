@@ -13,9 +13,18 @@
 
 name: Build Henge IPA
 
-# Manual only (Actions tab > Build Henge IPA > Run workflow): pushes to main don't build an IPA.
+# Builds on every push (so a fork's branches show green or red), and by hand from the Actions tab.
 on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "Screenshots/**"
+      - "repo.json"
   workflow_dispatch: {}
+
+concurrency:
+  group: build-henge-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   HUSK: ${{ github.workspace }}/Husk

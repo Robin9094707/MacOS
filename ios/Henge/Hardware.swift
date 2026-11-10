@@ -66,8 +66,37 @@ enum Device {
 /// A keyboard attached to the device. iOS reports each key going down and coming up by its HID usage,
 /// which is what the Mac's USB keyboard sends, so every key and modifier goes straight across.
 enum HardwareKeys {
+    /// A PC keyboard has Alt where a Mac's has Command, and the Windows key where Option is.
+    static let swapCommandOptionKey = "henge.keyboard.swapCommandOption"
+    /// Caps Lock types as Control, as many people set it on a Mac.
+    static let capsLockControlKey = "henge.keyboard.capsLockAsControl"
+
     private static var held: Set<UInt8> = []
     private static var lastKey: CFTimeInterval = 0
+    private static var swapCommandOption = false
+    private static var capsLockAsControl = false
+
+    /// Read once when a Mac starts, so a key's release always maps the way its press did.
+    static func loadSettings() {
+        releaseAll()
+        let defaults = UserDefaults.standard
+        swapCommandOption = defaults.bool(forKey: swapCommandOptionKey)
+        capsLockAsControl = defaults.bool(forKey: capsLockControlKey)
+        HengeLog.log("input", "keyboard: swap command/option \(swapCommandOption ? "on" : "off"), caps lock as control \(capsLockAsControl ? "on" : "off")")
+    }
+
+    /// The HID usage the Mac gets for a key, after the keyboard settings.
+    static func mapped(_ usage: UInt8) -> UInt8 {
+        if capsLockAsControl && usage == 0x39 { return 0xe0 }
+        guard swapCommandOption else { return usage }
+        switch usage {
+        case 0xe2: return 0xe3 // left Alt -> left Command
+        case 0xe3: return 0xe2 // left GUI -> left Option
+        case 0xe6: return 0xe7
+        case 0xe7: return 0xe6
+        default: return usage
+        }
+    }
 
     /// With the on-screen keyboard's view holding the keyboard, iOS may also offer a hardware key as
     /// text, and again as it repeats. The Mac has the key already, and repeats it itself.
@@ -93,7 +122,7 @@ enum HardwareKeys {
                 rest.insert(press)
                 continue
             }
-            let usage = UInt8(raw)
+            let usage = mapped(UInt8(raw))
             henge_vm_key_hid(usage, down ? 1 : 0)
             if usage < 0xe0 { lastKey = CACurrentMediaTime() }
             if down {
@@ -152,6 +181,11 @@ final class HardwareMouse {
     static let speedKey = "henge.mouse.speed"
     static let reverseKey = "henge.mouse.reverse"
     static let scrollSpeedKey = "henge.mouse.scrollSpeed"
+    /// A mouse's side buttons go back and forward (⌘[ and ⌘]), as in Safari and Finder.
+    static let sideButtonsKey = "henge.mouse.sideButtonsNavigate"
+    /// A physical button went down. On iPhone, AssistiveTouch also turns that click into a touch on the
+    /// screen, which the trackpad then lets go of instead of clicking a second time.
+    static let buttonPressed = Notification.Name("henge.mouse.buttonPressed")
 
     private var observers: [NSObjectProtocol] = []
     private var mice: [GCMouse] = []
@@ -162,11 +196,30 @@ final class HardwareMouse {
     private var reverse = false
     private var scrollsLogged = 0 // the first few, to see what a device's raw values look like
     private var lastScrollFirst: Float = 0, lastScrollSecond: Float = 0
+    private var scrollScale: Float = 0.3
+    private var sideButtons = true
+    private var lastActivity: CFTimeInterval = 0
+
+    /// iPhone has no pointer of its own: a mouse there goes through AssistiveTouch, whose clicks and drags
+    /// also arrive as touches at its cursor. While a mouse is in use those touches are the mouse's, not
+    /// fingers on the trackpad, or every click would land twice and drags would move the Mac's pointer
+    /// a second time.
+    var ownsTouches: Bool {
+        guard !Device.isPad, !mice.isEmpty else { return false }
+        return !buttons.held.isEmpty || CACurrentMediaTime() - lastActivity < 0.35
+    }
+
+    var connected: Bool { !mice.isEmpty }
 
     func start() {
+        // start() runs on appearing and again when the Mac boots: don't stack a second set of observers.
+        observers.forEach(NotificationCenter.default.removeObserver)
+        observers.removeAll()
         let defaults = UserDefaults.standard
         speed = defaults.object(forKey: Self.speedKey) == nil ? 1 : Float(defaults.double(forKey: Self.speedKey))
         reverse = defaults.bool(forKey: Self.reverseKey)
+        sideButtons = defaults.object(forKey: Self.sideButtonsKey) == nil ? true : defaults.bool(forKey: Self.sideButtonsKey)
+        readScrollSpeed()
         releaseButtons()
         let swapButtons = defaults.bool(forKey: PhysicalMouseButtons.swapKey)
         buttons = PhysicalMouseButtons(swapsRightAndMiddle: swapButtons)
@@ -189,6 +242,10 @@ final class HardwareMouse {
             let locked = scene?.pointerLockState?.isLocked ?? false
             HengeLog.log("input", "pointer lock: \(locked ? "on" : "off")")
         })
+        // Scroll speed applies at once: read it when the settings change, not on every scroll event.
+        observers.append(NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.readScrollSpeed()
+        })
         PointerLock.set(true)
     }
 
@@ -204,6 +261,7 @@ final class HardwareMouse {
             input.rightButton?.pressedChangedHandler = nil
             input.middleButton?.pressedChangedHandler = nil
             input.scroll.valueChangedHandler = nil
+            input.auxiliaryButtons?.forEach { $0.pressedChangedHandler = nil }
         }
         mice.removeAll()
     }
@@ -221,10 +279,32 @@ final class HardwareMouse {
         input.rightButton?.pressedChangedHandler = { [weak self] _, _, pressed in self?.button(1, pressed) }
         input.middleButton?.pressedChangedHandler = { [weak self] _, _, pressed in self?.button(2, pressed) }
         input.scroll.valueChangedHandler = { [weak self] _, first, second in self?.scrolled(first, second) }
+        for (index, aux) in (input.auxiliaryButtons ?? []).prefix(2).enumerated() {
+            aux.pressedChangedHandler = { [weak self] _, _, pressed in self?.sideButton(index, pressed) }
+        }
+    }
+
+    private func readScrollSpeed() {
+        let defaults = UserDefaults.standard
+        let configured = defaults.object(forKey: Self.scrollSpeedKey) == nil
+            ? 0.3 : defaults.double(forKey: Self.scrollSpeedKey)
+        scrollScale = Float(configured.isFinite ? min(max(configured, 0.1), 1.5) : 0.3)
+    }
+
+    /// The first side button goes back (⌘[), the second forward (⌘]).
+    private func sideButton(_ index: Int, _ pressed: Bool) {
+        lastActivity = CACurrentMediaTime()
+        guard sideButtons, pressed else { return }
+        let key: UInt8 = index == 0 ? 0x2f : 0x30 // [ and ]
+        henge_vm_key_hid(0xe3, 1)
+        henge_vm_key_hid(key, 1)
+        henge_vm_key_hid(key, 0)
+        henge_vm_key_hid(0xe3, 0)
     }
 
     /// GameController's Y runs upward. What doesn't make a whole step yet waits for the next move.
     private func moved(_ dx: Float, _ dy: Float) {
+        lastActivity = CACurrentMediaTime()
         restX += dx * speed
         restY -= dy * speed
         let x = restX.rounded(), y = restY.rounded()
@@ -235,7 +315,9 @@ final class HardwareMouse {
     }
 
     private func button(_ physicalButton: Int32, _ pressed: Bool) {
+        lastActivity = CACurrentMediaTime()
         guard let guestButton = buttons.event(physicalButton, pressed: pressed) else { return }
+        if pressed { NotificationCenter.default.post(name: Self.buttonPressed, object: nil) }
         if buttonsLogged < 32 {
             buttonsLogged += 1
             HengeLog.log("input", "physical mouse button: raw=\(physicalButton) guest=\(guestButton) \(pressed ? "down" : "up")")
@@ -259,10 +341,8 @@ final class HardwareMouse {
         let mostlyHorizontal = abs(second) > 2 * abs(first)
         let verticalRaw = verticalChanged && !mostlyHorizontal ? -first : 0
         let horizontalRaw = horizontalChanged && !mostlyVertical ? second : 0
-        let defaults = UserDefaults.standard
-        let configured = defaults.object(forKey: Self.scrollSpeedKey) == nil
-            ? 0.3 : defaults.double(forKey: Self.scrollSpeedKey)
-        let scale = Float(configured.isFinite ? min(max(configured, 0.1), 1.5) : 0.3)
+        lastActivity = CACurrentMediaTime()
+        let scale = scrollScale
         let way: Int32 = reverse ? -1 : 1
         let horizontal = way * Self.wheelUnits(horizontalRaw, scale: scale)
         let vertical = way * Self.wheelUnits(verticalRaw, scale: scale)
