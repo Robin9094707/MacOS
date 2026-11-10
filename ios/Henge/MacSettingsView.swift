@@ -7,6 +7,13 @@ struct MacSettingsView: View {
     @State private var mac: VirtualMac
     @State private var confirmDelete = false
     @State private var movingExport = false
+    @State private var savedState: Date?
+    @State private var hasSavedState = false
+    @State private var snapshotBusy: String?
+    @State private var snapshotMessage: String?
+    @State private var confirmReset = false
+    @State private var confirmSaveState = false
+    @State private var confirmDeleteState = false
     @AppStorage("henge.cpus") private var cpus = 4
 
     init(mac: VirtualMac) { _mac = State(initialValue: mac) }
@@ -98,6 +105,8 @@ struct MacSettingsView: View {
                 .padding(17)
                 .deskCard()
 
+                DeskHeading("Zurücksetzen")
+                resetCard
                 DeskHeading("Verwalten")
                 manage
             }
@@ -109,6 +118,25 @@ struct MacSettingsView: View {
         .navigationTitle(mac.name)
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear(perform: save)
+        .onAppear(perform: readSavedState)
+        .confirmationDialog("\(mac.name) zurücksetzen?", isPresented: $confirmReset, titleVisibility: .visible) {
+            Button("Auf Werkszustand zurücksetzen", role: .destructive) { runSnapshot("Wird zurückgesetzt …", done: "Der Mac ist zurückgesetzt. Beim nächsten Start ist er wie zum gesicherten Zeitpunkt.") { try await MacSnapshot.restore(mac) } }
+        } message: {
+            Text("Alles, was seitdem auf diesem Mac eingerichtet, installiert oder gesichert wurde, wird gelöscht. macOS selbst bleibt installiert.")
+        }
+        .confirmationDialog("Aktuellen Zustand sichern?", isPresented: $confirmSaveState, titleVisibility: .visible) {
+            Button(hasSavedState ? "Werkszustand ersetzen" : "Sichern") { runSnapshot("Wird gesichert …", done: "Der aktuelle Zustand ist als Werkszustand gesichert.") { try await MacSnapshot.save(mac) } }
+        } message: {
+            Text(hasSavedState ? "Der bisher gesicherte Werkszustand wird durch den jetzigen Stand dieses Macs ersetzt." : "Der jetzige Stand dieses Macs wird zum Punkt, auf den du ihn später zurücksetzen kannst.")
+        }
+        .confirmationDialog("Werkszustand löschen?", isPresented: $confirmDeleteState, titleVisibility: .visible) {
+            Button("Werkszustand löschen", role: .destructive) {
+                MacSnapshot.delete(mac)
+                readSavedState()
+            }
+        } message: {
+            Text("Gibt den Speicher frei, den der gesicherte Zustand belegt. Der Mac selbst bleibt, wie er ist, kann danach aber nicht mehr zurückgesetzt werden.")
+        }
         .fileMover(isPresented: $movingExport, file: machines.lastExport) { result in
             switch result {
             case .success: machines.lastExport = nil
@@ -151,6 +179,71 @@ struct MacSettingsView: View {
             row("Diesen Mac löschen", symbol: nil, tint: Desk.bad) { confirmDelete = true }
         }
         .deskCard()
+    }
+
+    /// Going back to the state the Mac was saved in (right after installing, or when chosen), without installing again.
+    private var resetCard: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                if let busy = snapshotBusy {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text(busy).font(.system(size: 15))
+                    }
+                } else if hasSavedState {
+                    Label(savedState.map { "Werkszustand vom \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "Werkszustand gesichert",
+                          systemImage: "clock.arrow.circlepath")
+                        .font(.system(size: 15, weight: .semibold))
+                } else {
+                    Label("Kein Werkszustand gesichert", systemImage: "exclamationmark.circle")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                Text(snapshotMessage ?? (hasSavedState
+                     ? "Setzt die Festplatte des Macs sauber auf diesen Stand zurück, ohne macOS neu zu installieren. Dauert nur einen Moment."
+                     : "Neue Macs sichern ihn direkt nach der Installation. Für diesen Mac kannst du den jetzigen Stand sichern – am besten frisch eingerichtet, ohne persönliche Daten."))
+                    .font(.system(size: 13)).foregroundStyle(Desk.dim)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Der gesicherte Zustand belegt anfangs keinen Platz. Je mehr sich der Mac danach ändert, desto mehr Speicher braucht er, höchstens so viel wie die Festplatte des Macs.")
+                    .font(.system(size: 12)).foregroundStyle(Desk.faint)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(17)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if snapshotBusy == nil {
+                if hasSavedState {
+                    divider
+                    row("Auf Werkszustand zurücksetzen", symbol: "arrow.counterclockwise", tint: Desk.bad) { confirmReset = true }
+                }
+                divider
+                row(hasSavedState ? "Jetzigen Zustand als Werkszustand sichern" : "Jetzigen Zustand sichern", symbol: "square.and.arrow.down", tint: Desk.accentLight) { confirmSaveState = true }
+                if hasSavedState {
+                    divider
+                    row("Werkszustand löschen", symbol: "trash", tint: Desk.dim) { confirmDeleteState = true }
+                }
+            }
+        }
+        .deskCard()
+    }
+
+    private func readSavedState() {
+        hasSavedState = MacSnapshot.exists(for: mac)
+        savedState = hasSavedState ? MacSnapshot.date(for: mac) : nil
+    }
+
+    private func runSnapshot(_ working: String, done: String, _ work: @escaping () async throws -> Void) {
+        guard snapshotBusy == nil else { return }
+        snapshotBusy = working
+        snapshotMessage = nil
+        Task {
+            do {
+                try await work()
+                snapshotMessage = done
+            } catch {
+                snapshotMessage = error.localizedDescription
+            }
+            snapshotBusy = nil
+            readSavedState()
+        }
     }
 
     private var divider: some View { Rectangle().fill(Desk.hairline).frame(height: 0.5) }

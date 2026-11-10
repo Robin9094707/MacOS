@@ -132,6 +132,11 @@ final class Installer: NSObject, ObservableObject {
                 try await install(mac, ipsw: ipsw, cpus: cpus)
                 if !keepImage { try? FileManager.default.removeItem(at: ipsw) }
                 HengeLog.log("install", "\(name): installed \(release.name)")
+                // The fresh install is the Mac's starting point: it can go back here later without installing again.
+                for _ in 0..<120 where MacSnapshot.macRunning { try? await Task.sleep(nanoseconds: 500_000_000) }
+                do { try await MacSnapshot.save(mac) } catch {
+                    HengeLog.log("install", "\(name): starting point not saved: \(error.localizedDescription)")
+                }
                 phase = .done("\(release.name) ist auf \(name) installiert. Beende Simplex Mac (wegwischen), öffne es erneut und tippe auf „Starten“.")
             } catch {
                 HengeLog.log("install", "failed: \(error.localizedDescription)")
