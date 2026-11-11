@@ -16,6 +16,7 @@ struct SettingsView: View {
     @AppStorage(EngineTuning.refreshKey) private var refreshRate = 60
     @AppStorage(EngineTuning.fastFlushKey) private var fastFlush = true
     @AppStorage(EngineTuning.wfiSpinKey) private var wfiSpin = false
+    @AppStorage(EngineTuning.maxPerformanceKey) private var maxPerformance = EngineTuning.newestChip
     @AppStorage(EngineTuning.superblocksKey) private var superblocks = false
     @AppStorage(JITBootstrap.codeCacheKey) private var codeCacheMB = JITBootstrap.defaultCodeCacheMB
 
@@ -114,6 +115,9 @@ struct SettingsView: View {
                     .listRowBackground(Desk.card)
                 }
                 Section("Leistung") {
+                    Toggle("Maximale Leistung", isOn: $maxPerformance)
+                    Text("Die CPUs des Macs bekommen die höchste Priorität, sodass iOS sie auf den Leistungskernen laufen lässt, und wachen aus dem Leerlauf sofort auf. Spürbar flüssiger, braucht aber mehr Akku und das Gerät wird wärmer. Auf iPhone 17 Pro und neuer standardmäßig an. Gilt beim nächsten Mac-Start.")
+                        .font(.footnote).foregroundStyle(.secondary)
                     Picker("Bildwiederholrate des Macs", selection: $refreshRate) {
                         Text("30 Hz").tag(30)
                         Text("60 Hz").tag(60)

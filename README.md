@@ -54,7 +54,7 @@ Then a Henge folder in the Mac's home folder is the same folder as Files › Hen
 
 ## Known limits
 
-- Signing in to an Apple Account inside macOS fails with a verification error.
+- Signing in to an Apple Account inside macOS fails with a verification error. Apple only allows it in macOS 15+ VMs run by Apple's Virtualization framework on a Mac, which gives each VM an identity backed by the host Mac's Secure Enclave; an emulator on iOS has no way to provide that.
 - Graphics are tested on macOS's own apps, Chrome, Firefox, VS Code and Discord. Other apps may draw wrongly.
 - On macOS Sonoma, the login screen and the account picture can be green: choose the wallpaper again in System Settings › Wallpaper (another one, then yours) and the picture in Users & Groups. Switching to a dynamic wallpaper (such as Sonoma) can stop the screen updating. On Ventura, the Calendar icon in the Dock is missing its date.
 - For the first few minutes after you log in, macOS is busy starting up in the background, so apps open more slowly.
